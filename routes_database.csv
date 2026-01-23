@@ -1,0 +1,8 @@
+route_id,route_name,priority,road_type,route_length_km
+R001,Queensferry Road,1,A-road,17.0
+R002,Leith Walk,1,A-road,14.4
+R003,Morningside Road,1,B-road,12.0
+R004,Corstorphine Road,1,A-road,14.9
+R005,Dalkeith Road,2,B-road,6.0
+R006,Portobello Road,2,B-road,8.5
+R007,Ferry Road,1,A-road,10.5
