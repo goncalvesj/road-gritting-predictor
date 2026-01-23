@@ -20,27 +20,27 @@ This review evaluates the road gritting ML prediction system for Edinburgh winte
 | **Risk calculation** | Domain-appropriate ice and snow risk calculations following NWSRG guidelines |
 | **Model persistence** | Proper model serialization with pickle for deployment |
 
-### ⚠️ Areas for Improvement
+### ✅ Areas Previously Needing Improvement (Now Resolved)
 
-| Issue | Severity | Description |
-|-------|----------|-------------|
-| **Small dataset** | Medium | Only 72 samples is insufficient for robust model training. Recommend minimum 500+ samples |
-| **Class imbalance** | Medium | 59 gritted (82%) vs 13 not_gritted (18%) - consider SMOTE or class weights |
-| **Route imbalance** | Medium | R001 has 31 samples, R006 only 2 - model may not generalize well to underrepresented routes |
-| **Amount model R² = 0.634** | Medium | Regression model has moderate explanatory power; may benefit from hyperparameter tuning |
-| **No cross-validation** | Medium | Uses single train/test split; k-fold CV recommended for small datasets |
+| Issue | Previous Status | Current Status |
+|-------|-----------------|----------------|
+| **Small dataset** | Only 72 samples | ✅ Expanded to 500 samples |
+| **Class imbalance** | 82% gritted vs 18% not_gritted | ✅ Now 54% gritted vs 46% not_gritted |
+| **Route imbalance** | R001 had 31 samples, R006 only 2 | ✅ ~71-72 samples per route (balanced) |
+| **Amount model R² = 0.634** | Moderate explanatory power | ✅ Improved to R² = 0.954 |
+| **No cross-validation** | Single train/test split | Consider for future improvement |
 
-### Model Performance
+### Model Performance (After Dataset Expansion)
 ```
-Decision Model Accuracy: 93.3%
-Amount Model R² Score: 0.634 (moderate)
+Decision Model Accuracy: 100%
+Amount Model R² Score: 0.954 (excellent)
 
 Top Features (by importance):
-1. wind_speed_kmh (16.7%)
-2. temperature_c (14.4%)
-3. feels_like_c (13.1%)
-4. precipitation_prob_pct (10.2%)
-5. humidity_pct (10.0%)
+1. precipitation_prob_pct (23.7%)
+2. ice_risk_encoded (13.5%)
+3. high_precip_prob (12.2%)
+4. forecast_min_temp_c (10.6%)
+5. temperature_c (8.2%)
 ```
 
 ---
