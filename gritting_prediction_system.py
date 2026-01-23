@@ -215,6 +215,36 @@ class GrittingPredictionSystem:
         
         print("\nModels trained successfully!")
         
+    def _sanitize_precipitation_type(self, precip_type):
+        """
+        Sanitize precipitation type to handle unknown values.
+        Maps unknown types to the closest known category.
+        
+        Known types from training data: ['none', 'rain', 'sleet', 'snow']
+        """
+        known_types = ['none', 'rain', 'sleet', 'snow']
+        
+        if precip_type in known_types:
+            return precip_type
+        
+        # Map common unknown types to closest known type
+        precip_lower = precip_type.lower()
+        
+        # Snow-like conditions
+        if any(term in precip_lower for term in ['snow', 'blizzard', 'flurr']):
+            return 'snow'
+        
+        # Sleet-like conditions  
+        if any(term in precip_lower for term in ['sleet', 'ice', 'hail', 'freez']):
+            return 'sleet'
+        
+        # Rain-like conditions
+        if any(term in precip_lower for term in ['rain', 'drizzle', 'shower', 'storm']):
+            return 'rain'
+        
+        # Default to 'none' for unknown conditions
+        return 'none'
+    
     def predict(self, route_id, weather_data):
         """
         Make prediction for a specific route and weather conditions
@@ -237,6 +267,12 @@ class GrittingPredictionSystem:
         """
         if self.decision_model is None or self.amount_model is None:
             raise RuntimeError("Models not trained. Call train() first.")
+        
+        # Sanitize precipitation type to handle unknown values
+        weather_data = weather_data.copy()  # Don't modify original
+        weather_data['precipitation_type'] = self._sanitize_precipitation_type(
+            weather_data['precipitation_type']
+        )
         
         # Prepare features
         features = self.prepare_features(route_id, weather_data)
