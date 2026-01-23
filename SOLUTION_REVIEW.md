@@ -66,11 +66,18 @@ ValueError: y contains previously unseen labels: 'hail'
 
 **Recommended Fix:**
 ```python
-# Add unknown value handling
+# Add unknown value handling in prepare_features or predict method
 known_types = ['none', 'rain', 'sleet', 'snow']
 precip_type = features['precipitation_type']
 if precip_type not in known_types:
+    # Map unknown types to closest known type
     precip_type = 'rain' if 'rain' in precip_type.lower() else 'none'
+features['precipitation_type'] = precip_type  # Update before encoding
+
+# Then use the sanitized value in the transform
+features_encoded['precipitation_type_encoded'] = self.label_encoders['precipitation_type'].transform(
+    [features['precipitation_type']]
+)[0]
 ```
 
 ---
@@ -102,14 +109,20 @@ Missing validation for:
 
 ---
 
-### 🟡 MEDIUM: Spread rate calculation anomaly
+### 🟡 MEDIUM: Spread rate calculation formula review
 **File:** `gritting_prediction_system.py:272`
 
 ```python
 spread_rate = int(salt_amount / (route_length * 1000) * 1000)
 ```
 
-**Problem:** Predicted spread rates (e.g., 77 g/m²) can exceed UK NWSRG maximum of 40 g/m². The regression model predicts salt_amount independently, which may not align with route length calculations.
+**Problem:** This formula simplifies to `salt_amount / route_length` (kg per km), but is intended to represent grams per square meter (g/m²). The predicted spread rates (e.g., 77 g/m²) can exceed UK NWSRG maximum of 40 g/m². 
+
+The issue is twofold:
+1. The regression model predicts `salt_amount` independently of the route length and spread rate relationship
+2. The formula doesn't account for road width, making the g/m² calculation incorrect
+
+**Recommended Fix:** Either constrain the model output to valid NWSRG ranges (20-40 g/m²), or use the spread rate as a direct model output rather than deriving it.
 
 ---
 
