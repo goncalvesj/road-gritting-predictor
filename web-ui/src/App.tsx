@@ -65,10 +65,10 @@ function App() {
     }
   };
 
-  const handleWeatherChange = (field: keyof WeatherData, value: string | number) => {
+  const handleWeatherChange = (field: keyof WeatherData, value: string) => {
     setWeather((prev) => ({
       ...prev,
-      [field]: typeof value === 'string' ? value : parseFloat(value.toString()),
+      [field]: field === 'precipitation_type' ? value : parseFloat(value),
     }));
   };
 
