@@ -66,10 +66,14 @@ function App() {
   };
 
   const handleWeatherChange = (field: keyof WeatherData, value: string) => {
-    setWeather((prev) => ({
-      ...prev,
-      [field]: field === 'precipitation_type' ? value : parseFloat(value),
-    }));
+    setWeather((prev) => {
+      if (field === 'precipitation_type') {
+        return { ...prev, [field]: value };
+      }
+      const numValue = parseFloat(value);
+      if (isNaN(numValue)) return prev;
+      return { ...prev, [field]: numValue };
+    });
   };
 
   return (
