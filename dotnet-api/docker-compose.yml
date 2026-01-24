@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  gritting-api:
+    build:
+      context: ..
+      dockerfile: dotnet-api/Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
+    volumes:
+      - ./models:/app/models
+    restart: unless-stopped
