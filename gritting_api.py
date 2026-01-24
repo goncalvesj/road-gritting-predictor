@@ -160,10 +160,12 @@ def predict_gritting():
             'success': False,
             'error': str(e)
         }), 503
-    except Exception as e:
+    except Exception:
+        # Log the full exception details server-side without exposing them to the client
+        app.logger.exception("Unhandled exception in /predict endpoint")
         return jsonify({
             'success': False,
-            'error': f'Internal server error: {str(e)}'
+            'error': 'Internal server error'
         }), 500
 
 
