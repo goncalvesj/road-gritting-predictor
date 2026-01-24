@@ -78,8 +78,8 @@ def validate_weather_data(weather):
     if weather['wind_speed_kmh'] < 0:
         return False, "wind_speed_kmh cannot be negative"
     
-    if not isinstance(weather['precipitation_type'], str):
-        return False, "precipitation_type must be a string"
+    if not isinstance(weather['precipitation_type'], str) or not weather['precipitation_type']:
+        return False, "precipitation_type must be a non-empty string"
     
     return True, None
 
