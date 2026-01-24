@@ -224,6 +224,10 @@ class GrittingPredictionSystem:
         """
         known_types = ['none', 'rain', 'sleet', 'snow']
         
+        # Handle None or non-string values
+        if precip_type is None or not isinstance(precip_type, str):
+            return 'none'
+        
         if precip_type in known_types:
             return precip_type
         

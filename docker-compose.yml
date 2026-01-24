@@ -12,12 +12,9 @@ services:
       - FLASK_DEBUG=0
       # Uncomment and set your API key for auto-weather feature
       # - OPENWEATHER_API_KEY=your_api_key_here
-    volumes:
-      # Persist trained models (optional - models are built into image)
-      - ./models:/app/models
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; exit(0 if requests.get('http://localhost:5000/health', timeout=5).status_code == 200 else 1)"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -36,8 +33,14 @@ services:
       # Uncomment and set your API key for auto-weather feature
       # - OPENWEATHER_API_KEY=your_api_key_here
     volumes:
-      # Mount source code for development
+      # Mount source code for development (overrides built-in files)
       - .:/app
     profiles:
       - dev
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

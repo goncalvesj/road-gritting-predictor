@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from gritting_prediction_system import GrittingPredictionSystem
 import requests
 import os
+import math
 
 app = Flask(__name__)
 
@@ -65,8 +66,12 @@ def validate_weather_data(weather):
     ]
     
     for field in numeric_fields:
-        if not isinstance(weather[field], (int, float)):
+        value = weather[field]
+        if not isinstance(value, (int, float)):
             return False, f"Field '{field}' must be a number"
+        # Reject NaN and infinity values
+        if math.isnan(value) or math.isinf(value):
+            return False, f"Field '{field}' cannot be NaN or infinity"
     
     # Validate ranges
     if not 0 <= weather['humidity_pct'] <= 100:
@@ -77,6 +82,12 @@ def validate_weather_data(weather):
     
     if weather['wind_speed_kmh'] < 0:
         return False, "wind_speed_kmh cannot be negative"
+    
+    # Temperature sanity checks (-50°C to +50°C covers extreme but plausible conditions)
+    temperature_fields = ['temperature_c', 'feels_like_c', 'road_surface_temp_c', 'forecast_min_temp_c']
+    for field in temperature_fields:
+        if not -50 <= weather[field] <= 50:
+            return False, f"Field '{field}' must be between -50 and 50 degrees Celsius"
     
     if not isinstance(weather['precipitation_type'], str) or not weather['precipitation_type']:
         return False, "precipitation_type must be a non-empty string"
@@ -128,6 +139,13 @@ def predict_gritting():
         
         route_id = data['route_id']
         weather_data = data['weather']
+        
+        # Validate route_id type
+        if not isinstance(route_id, str):
+            return jsonify({
+                'success': False,
+                'error': 'route_id must be a string'
+            }), 400
         
         # Validate weather data
         is_valid, error_msg = validate_weather_data(weather_data)
@@ -202,6 +220,13 @@ def predict_with_auto_weather():
         route_id = data['route_id']
         lat = data['latitude']
         lon = data['longitude']
+        
+        # Validate route_id type
+        if not isinstance(route_id, str):
+            return jsonify({
+                'success': False,
+                'error': 'route_id must be a string'
+            }), 400
         
         # Validate coordinates
         if not isinstance(lat, (int, float)) or not isinstance(lon, (int, float)):
@@ -333,6 +358,11 @@ def fetch_weather_from_api(lat, lon):
     """
     Fetch weather data from weather API.
     Uses OpenWeatherMap by default (requires OPENWEATHER_API_KEY env var).
+    
+    Note: The OpenWeatherMap current weather endpoint (/data/2.5/weather) does not 
+    include probability of precipitation (pop). This field is only available in the 
+    forecast endpoint. We default to 50% when missing - consider using the forecast 
+    endpoint for more accurate precipitation probability.
     """
     # Get API key from environment variable
     api_key = os.environ.get('OPENWEATHER_API_KEY')
@@ -361,13 +391,14 @@ def fetch_weather_from_api(lat, lon):
     
     try:
         # Map API response to our format
+        # Note: 'pop' is not available in current weather endpoint, defaults to 50%
         weather_data = {
             'temperature_c': data['main']['temp'],
             'feels_like_c': data['main']['feels_like'],
             'humidity_pct': data['main']['humidity'],
             'wind_speed_kmh': data.get('wind', {}).get('speed', 0) * 3.6,  # m/s to km/h
             'precipitation_type': map_weather_condition(data['weather'][0]['main']),
-            'precipitation_prob_pct': data.get('pop', 0.5) * 100,  # Default 50% if not provided
+            'precipitation_prob_pct': data.get('pop', 0.5) * 100,  # Default 50% - see docstring
             'road_surface_temp_c': data['main']['temp'] - 1.5,  # Estimate
             'forecast_min_temp_c': data['main']['temp_min']
         }
