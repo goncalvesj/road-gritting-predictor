@@ -70,6 +70,10 @@ function App() {
       if (field === 'precipitation_type') {
         return { ...prev, [field]: value };
       }
+      // Allow empty string for better UX when clearing fields
+      if (value === '') {
+        return { ...prev, [field]: 0 };
+      }
       const numValue = parseFloat(value);
       if (isNaN(numValue)) return prev;
       return { ...prev, [field]: numValue };
