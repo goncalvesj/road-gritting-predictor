@@ -31,22 +31,14 @@ try
     
     predictionService.LoadRoutes(routesPath);
 
-    // Try to load existing models
+    // Load pre-trained models
+    // Models must be trained separately using the ModelTrainer tool
     var modelsDir = "models";
-    try
-    {
-        predictionService.LoadModels(modelsDir);
-    }
-    catch (FileNotFoundException)
-    {
-        logger.LogWarning("Models not found. Training new models...");
-        
-        var trainingDataPath = Path.Combine("..", "edinburgh_gritting_training_dataset.csv");
-        if (!File.Exists(trainingDataPath))
-            trainingDataPath = "edinburgh_gritting_training_dataset.csv"; // Fallback
-        
-        predictionService.TrainModels(trainingDataPath, modelsDir);
-    }
+    predictionService.LoadModels(modelsDir);
+}
+catch (FileNotFoundException ex)
+{
+    logger.LogError(ex, "Models not found. Please train models first using the ModelTrainer tool: dotnet run --project ModelTrainer");
 }
 catch (Exception ex)
 {

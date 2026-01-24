@@ -5,10 +5,23 @@ A production-ready .NET 10 Web API for road gritting predictions using ML.NET. T
 ## Features
 
 - **ML.NET Models**: Binary classification for gritting decision, regression for salt amount
+- **Separate Model Training**: Dedicated ModelTrainer tool for training models independently from the API
 - **RESTful API**: Four endpoints matching Python API functionality
 - **Auto-weather**: Integration with OpenWeatherMap API
 - **Containerized**: Docker support for easy deployment
 - **Risk Assessment**: Automatic ice and snow risk calculation
+
+## Architecture
+
+The solution is split into two components:
+1. **ModelTrainer** - Console application for training ML.NET models
+2. **GrittingApi** - Web API that loads pre-trained models and serves predictions
+
+This separation allows:
+- Models to be trained offline or in CI/CD pipelines
+- API to start faster without training overhead
+- Model versioning and validation before deployment
+- Compliance with ML.NET best practices
 
 ## Prerequisites
 
@@ -18,19 +31,41 @@ A production-ready .NET 10 Web API for road gritting predictions using ML.NET. T
 
 ## Quick Start
 
-### Local Development
+### Training Models
+
+Before running the API, you must train the models using the ModelTrainer tool:
 
 ```bash
-# Restore dependencies
-dotnet restore
+# From dotnet-api directory
+cd ModelTrainer
+dotnet run ../../edinburgh_gritting_training_dataset.csv ../models
 
-# Run the application
+# Or with default paths (from ModelTrainer directory):
+dotnet run
+```
+
+The ModelTrainer will:
+- Load training data from CSV
+- Train FastTree binary classification model (gritting decision)
+- Train FastTree regression model (salt amount)
+- Validate model format and compatibility
+- Save models as `decision_model.zip` and `amount_model.zip`
+- Save precipitation encoding as `precip_encoding.json`
+
+### Running the API
+
+Once models are trained:
+
+```bash
+# From dotnet-api directory
 dotnet run
 
 # API available at http://localhost:5000
 ```
 
 ### Docker Deployment
+
+The Docker build automatically trains models during the build process:
 
 ```bash
 # Build and run with Docker Compose
@@ -126,19 +161,34 @@ Health check endpoint.
 
 ## ML Models
 
+### Model Format
+
+Models are saved in ML.NET's native `.zip` format, which:
+- Is fully compatible with ML.NET PredictionEngine
+- Supports versioning and schema validation
+- Can be loaded without retraining
+- Is validated during the training process
+
 ### Training Data
 - **Source**: `edinburgh_gritting_training_dataset.csv`
 - **Routes**: `routes_database.csv`
 
-### Features
-- Route metadata (priority, length)
-- Weather conditions (temperature, humidity, wind, precipitation)
-- Engineered features (temp_below_zero, surface_temp_below_zero, high_precip_prob)
-- Risk assessments (ice_risk, snow_risk)
+### Features (15 total)
+- Route metadata: priority, route_length_km
+- Weather conditions: temperature_c, feels_like_c, humidity_pct, wind_speed_kmh, precipitation_prob_pct, road_surface_temp_c, forecast_min_temp_c
+- Encoded: precipitation_type_encoded, ice_risk_encoded, snow_risk_encoded
+- Engineered: temp_below_zero, surface_temp_below_zero, high_precip_prob
 
 ### Models
 1. **Decision Model**: FastTree binary classifier for gritting yes/no
 2. **Amount Model**: FastTree regression for salt amount prediction
+
+### Model Validation
+
+The ModelTrainer validates models after training:
+- Verifies models can be loaded from disk
+- Creates prediction engines successfully
+- Runs test predictions to ensure correct format
 
 ### Risk Calculations
 
@@ -159,15 +209,17 @@ Health check endpoint.
 - `ASPNETCORE_ENVIRONMENT`: Environment setting (Development/Production)
 - `ASPNETCORE_URLS`: Listening URLs (default: http://+:5000)
 
-### Model Training
-Models are automatically trained on first startup if not found in `models/` directory. To force retraining:
+### Retraining Models
+
+To retrain models:
 
 ```bash
 # Delete existing models
 rm -rf models/
 
-# Restart application
-dotnet run
+# Run ModelTrainer
+cd ModelTrainer
+dotnet run ../../edinburgh_gritting_training_dataset.csv ../models
 ```
 
 ## Project Structure
@@ -182,11 +234,14 @@ dotnet-api/
 │   ├── HealthResponse.cs
 │   └── MLModels.cs
 ├── Services/            # Business logic
-│   ├── GrittingPredictionService.cs
+│   ├── GrittingPredictionService.cs   # Model loading and prediction
 │   └── WeatherService.cs
+├── ModelTrainer/        # Separate model training tool
+│   ├── ModelTrainer.csproj
+│   └── Program.cs       # Training logic with validation
 ├── Program.cs           # API endpoints and startup
 ├── GrittingApi.csproj   # Project file
-├── Dockerfile           # Container image
+├── Dockerfile           # Container image (includes training)
 └── docker-compose.yml   # Container orchestration
 ```
 
