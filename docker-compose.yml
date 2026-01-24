@@ -33,6 +33,8 @@ services:
       - "5001:5000"
     environment:
       - FLASK_DEBUG=1
+      # Uncomment and set your API key for auto-weather feature
+      # - OPENWEATHER_API_KEY=your_api_key_here
     volumes:
       # Mount source code for development
       - .:/app
