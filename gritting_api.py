@@ -292,12 +292,38 @@ def get_routes():
 def health_check():
     """Health check endpoint"""
     global _models_loaded
-    return jsonify({
-        'status': 'healthy',
-        'models_loaded': _models_loaded
-    }), 200
+    try:
+        # Attempt to initialize the system and load models if not already done
+        get_system()
 
+        # If models are loaded, the service is healthy
+        if _models_loaded:
+            return jsonify({
+                'status': 'healthy',
+                'models_loaded': True
+            }), 200
 
+        # If initialization returned without error but models are not loaded,
+        # treat this as a degraded/unready state.
+        return jsonify({
+            'status': 'unhealthy',
+            'models_loaded': False,
+            'error': 'Models are not loaded'
+        }), 503
+    except RuntimeError as e:
+        # Expected failure mode when models are missing or cannot be loaded
+        return jsonify({
+            'status': 'unhealthy',
+            'models_loaded': False,
+            'error': str(e)
+        }), 503
+    except Exception as e:
+        # Unexpected internal error during initialization
+        return jsonify({
+            'status': 'unhealthy',
+            'models_loaded': False,
+            'error': f'Internal server error: {str(e)}'
+        }), 500
 class WeatherAPIError(Exception):
     """Custom exception for weather API errors"""
     pass
