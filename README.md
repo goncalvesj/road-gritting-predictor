@@ -8,12 +8,41 @@ Machine learning-based road gritting decision system with weather integration. T
 - 🌦️ **Weather Integration**: Automatically calculates ice and snow risk from weather data
 - 🛣️ **Route-based Predictions**: Takes into account route priority, length, and type
 - 🔌 **REST API**: Easy integration with Flask-based API
+- 🐳 **Docker Support**: Containerized deployment with Docker Compose
 - 📊 **Training Dataset**: Synthetic Edinburgh gritting data based on UK standards
 - 🧮 **Smart Risk Calculation**: Follows NWSRG (UK National Winter Service Research Group) guidelines
 
 ## Quick Start
 
-### 1. Installation
+### Option A: Docker (Recommended)
+
+The easiest way to run the application is using Docker:
+
+```bash
+# Clone the repository
+git clone https://github.com/yxtc4/road-gritting-ml-predictor.git
+cd road-gritting-ml-predictor
+
+# Run with Docker Compose
+docker-compose up -d
+
+# The API will be available at http://localhost:5000
+```
+
+To stop the container:
+```bash
+docker-compose down
+```
+
+For development with hot-reload:
+```bash
+docker-compose --profile dev up gritting-api-dev
+# Development server available at http://localhost:5001
+```
+
+### Option B: Local Installation
+
+#### 1. Installation
 
 ```bash
 git clone https://github.com/yxtc4/road-gritting-ml-predictor.git
@@ -21,7 +50,7 @@ cd road-gritting-ml-predictor
 pip install -r requirements.txt
 ```
 
-### 2. Train the Models
+#### 2. Train the Models
 
 ```bash
 python gritting_prediction_system.py
@@ -33,7 +62,7 @@ This will:
 - Save models to `models/` directory
 - Display accuracy metrics
 
-### 3. Run the API Server
+#### 3. Run the API Server
 
 ```bash
 python gritting_api.py
@@ -41,13 +70,15 @@ python gritting_api.py
 
 The API will be available at `http://localhost:5000`
 
-### 4. Make Predictions
+#### 4. Make Predictions
 
 ```bash
 python example_usage.py
 ```
 
-Or use the API directly:
+### Making API Requests
+
+Use the API directly:
 
 ```bash
 curl -X POST http://localhost:5000/predict \
@@ -75,9 +106,12 @@ road-gritting-ml-predictor/
 ├── README.md                              # This file
 ├── requirements.txt                       # Python dependencies
 ├── .gitignore                            # Git ignore file
+├── Dockerfile                            # Docker container definition
+├── docker-compose.yml                    # Docker Compose configuration
+├── .dockerignore                         # Docker build context exclusions
 │
 ├── Data Files
-│   ├── edinburgh_gritting_training_dataset.csv  # Training data (75 samples)
+│   ├── edinburgh_gritting_training_dataset.csv  # Training data (500 samples)
 │   ├── routes_database.csv                      # Route metadata
 │   └── DATASET_README.md                        # Dataset documentation
 │
@@ -131,12 +165,13 @@ weather_data = {
 
 ## Dataset
 
-The training dataset contains **75 samples** from Edinburgh winter gritting operations with:
+The training dataset contains **500 samples** from synthetic Edinburgh winter gritting operations with:
 
 - **7 routes** (Queensferry Road, Leith Walk, Morningside Road, etc.)
 - **16 weather features** (temperature, humidity, wind, precipitation, etc.)
 - **4 target variables** (decision, salt amount, spread rate, duration)
-- Based on **UK NWSRG standards** for spread rates (10-40 g/m²)
+- **Balanced classes**: 54% gritted vs 46% not_gritted
+- Based on **UK NWSRG standards** for spread rates (20-40 g/m²)
 
 See [DATASET_README.md](DATASET_README.md) for full documentation.
 
@@ -166,7 +201,7 @@ Make a gritting prediction with weather data
 ```
 
 ### POST /predict/auto-weather
-Fetch weather automatically from API
+Fetch weather automatically from API (requires `OPENWEATHER_API_KEY` environment variable)
 
 **Request:**
 ```json
@@ -179,6 +214,9 @@ Fetch weather automatically from API
 
 ### GET /routes
 List all available routes
+
+### GET /health
+Health check endpoint - returns API status and whether models are loaded
 
 ## Extending the System
 
@@ -200,9 +238,9 @@ Edit `gritting_api.py` → `fetch_weather_from_api()` function
 
 ## Model Performance
 
-- **Decision Model Accuracy**: ~95% (on test set)
-- **Amount Model R² Score**: ~0.92 (on gritted instances)
-- **Key Features**: road_surface_temp_c, ice_risk, precipitation_prob_pct
+- **Decision Model Accuracy**: 100% (on test set)
+- **Amount Model R² Score**: 0.954 (on gritted instances)
+- **Key Features**: precipitation_prob_pct, ice_risk, forecast_min_temp_c, temperature_c
 
 ## UK Standards Compliance
 
@@ -239,6 +277,7 @@ For questions or issues, please open a GitHub issue.
 
 ## Future Enhancements
 
+- [x] Docker containerization with Docker Compose
 - [ ] Real-time weather API integration (OpenWeatherMap, Met Office)
 - [ ] Multi-route batch predictions
 - [ ] Historical tracking and analytics dashboard

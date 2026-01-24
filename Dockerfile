@@ -1,0 +1,44 @@
+# Use Python 3.11 slim image for smaller size
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    FLASK_DEBUG=0
+
+# Install curl for health checks and clean up apt cache
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first for better caching
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY gritting_prediction_system.py .
+COPY gritting_api.py .
+COPY edinburgh_gritting_training_dataset.csv .
+COPY routes_database.csv .
+
+# Create models directory
+RUN mkdir -p models
+
+# Train the models during build
+# Note: This increases image size but ensures models are ready at startup.
+# If training fails, the build will fail - allowing early detection of issues.
+RUN python gritting_prediction_system.py
+
+# Expose the API port
+EXPOSE 5000
+
+# Health check using curl (lighter weight than Python)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:5000/health || exit 1
+
+# Run the Flask API
+CMD ["python", "gritting_api.py"]

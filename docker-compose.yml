@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  gritting-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gritting-predictor
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_DEBUG=0
+      # Uncomment and set your API key for auto-weather feature
+      # - OPENWEATHER_API_KEY=your_api_key_here
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Development service with hot-reload
+  gritting-api-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gritting-predictor-dev
+    ports:
+      - "5001:5000"
+    environment:
+      - FLASK_DEBUG=1
+      # Uncomment and set your API key for auto-weather feature
+      # - OPENWEATHER_API_KEY=your_api_key_here
+    volumes:
+      # Mount source code for development (overrides built-in files)
+      - .:/app
+    profiles:
+      - dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

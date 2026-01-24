@@ -175,13 +175,14 @@ print(feature_importance.head(10))
 
 ## Data Statistics
 
-- **Total records:** 75
-- **Gritting events:** 59 (78.7%)
-- **No gritting events:** 16 (21.3%)
-- **Date range:** November 15 - December 10, 2024
+- **Total records:** 500
+- **Gritting events:** 270 (54%)
+- **No gritting events:** 230 (46%)
+- **Date range:** November 1, 2024 - February 28, 2025
 - **Unique routes:** 7
 - **Priority 1 routes:** 5
 - **Priority 2 routes:** 2
+- **Records per route:** ~71-72 (balanced distribution)
 
 ## Extending the Dataset
 

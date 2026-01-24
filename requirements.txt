@@ -1,0 +1,8 @@
+# Core dependencies
+pandas>=1.5.0
+numpy>=1.23.0
+scikit-learn>=1.1.0
+
+# API dependencies
+flask>=2.2.0
+requests>=2.28.0
