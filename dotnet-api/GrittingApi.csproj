@@ -13,11 +13,4 @@
     <PackageReference Include="CsvHelper" Version="33.0.1" />
   </ItemGroup>
 
-  <!-- Exclude ModelTrainer project from compilation -->
-  <ItemGroup>
-    <Compile Remove="ModelTrainer/**" />
-    <Content Remove="ModelTrainer/**" />
-    <None Remove="ModelTrainer/**" />
-  </ItemGroup>
-
 </Project>

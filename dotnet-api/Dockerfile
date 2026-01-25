@@ -4,24 +4,25 @@ WORKDIR /src
 
 # Copy project files and restore dependencies
 COPY dotnet-api/GrittingApi.csproj ./dotnet-api/
-COPY dotnet-api/ModelTrainer/ModelTrainer.csproj ./dotnet-api/ModelTrainer/
+COPY dotnet-model-trainer/ModelTrainer.csproj ./dotnet-model-trainer/
 WORKDIR /src/dotnet-api
 RUN dotnet restore
 
 # Also restore ModelTrainer
-WORKDIR /src/dotnet-api/ModelTrainer
+WORKDIR /src/dotnet-model-trainer
 RUN dotnet restore
 
 # Copy all source code
 WORKDIR /src
 COPY dotnet-api/ ./dotnet-api/
+COPY dotnet-model-trainer/ ./dotnet-model-trainer/
 
 # Build the API
 WORKDIR /src/dotnet-api
 RUN dotnet build -c Release -o /app/build
 
 # Build the ModelTrainer
-WORKDIR /src/dotnet-api/ModelTrainer
+WORKDIR /src/dotnet-model-trainer
 RUN dotnet build -c Release -o /app/trainer
 
 # Publish stage

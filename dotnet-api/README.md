@@ -5,7 +5,7 @@ A production-ready .NET 10 Web API for road gritting predictions using ML.NET. T
 ## Features
 
 - **ML.NET Models**: Binary classification for gritting decision, regression for salt amount
-- **Separate Model Training**: Dedicated ModelTrainer tool for training models independently from the API
+- **Separate Model Training**: Dedicated `dotnet-model-trainer` tool for training models independently from the API
 - **RESTful API**: Four endpoints matching Python API functionality
 - **Auto-weather**: Integration with OpenWeatherMap API
 - **Containerized**: Docker support for easy deployment
@@ -13,9 +13,9 @@ A production-ready .NET 10 Web API for road gritting predictions using ML.NET. T
 
 ## Architecture
 
-The solution is split into two components:
-1. **ModelTrainer** - Console application for training ML.NET models
-2. **GrittingApi** - Web API that loads pre-trained models and serves predictions
+The solution is split into two separate projects:
+1. **dotnet-model-trainer** - Console application for training ML.NET models (separate folder)
+2. **dotnet-api** - Web API that loads pre-trained models and serves predictions
 
 This separation allows:
 - Models to be trained offline or in CI/CD pipelines
@@ -36,11 +36,11 @@ This separation allows:
 Before running the API, you must train the models using the ModelTrainer tool:
 
 ```bash
-# From dotnet-api directory
-cd ModelTrainer
-dotnet run ../../edinburgh_gritting_training_dataset.csv ../models
+# From repository root
+cd dotnet-model-trainer
+dotnet run ../edinburgh_gritting_training_dataset.csv ../dotnet-api/models
 
-# Or with default paths (from ModelTrainer directory):
+# Or with default paths (from dotnet-model-trainer directory):
 dotnet run
 ```
 
@@ -217,32 +217,35 @@ To retrain models:
 # Delete existing models
 rm -rf models/
 
-# Run ModelTrainer
-cd ModelTrainer
-dotnet run ../../edinburgh_gritting_training_dataset.csv ../models
+# Run ModelTrainer from dotnet-model-trainer folder
+cd ../dotnet-model-trainer
+dotnet run ../edinburgh_gritting_training_dataset.csv ../dotnet-api/models
 ```
 
 ## Project Structure
 
 ```
-dotnet-api/
-├── Models/               # Data transfer objects and ML models
-│   ├── WeatherData.cs
-│   ├── PredictionRequest.cs
-│   ├── PredictionResponse.cs
-│   ├── RouteInfo.cs
-│   ├── HealthResponse.cs
-│   └── MLModels.cs
-├── Services/            # Business logic
-│   ├── GrittingPredictionService.cs   # Model loading and prediction
-│   └── WeatherService.cs
-├── ModelTrainer/        # Separate model training tool
+road-gritting-ml-predictor/
+├── dotnet-api/                    # Web API project
+│   ├── Models/                    # Data transfer objects and ML models
+│   │   ├── WeatherData.cs
+│   │   ├── PredictionRequest.cs
+│   │   ├── PredictionResponse.cs
+│   │   ├── RouteInfo.cs
+│   │   ├── HealthResponse.cs
+│   │   └── MLModels.cs
+│   ├── Services/                  # Business logic
+│   │   ├── GrittingPredictionService.cs
+│   │   └── WeatherService.cs
+│   ├── Program.cs                 # API endpoints and startup
+│   ├── GrittingApi.csproj         # Project file
+│   ├── Dockerfile                 # Container image
+│   └── docker-compose.yml         # Container orchestration
+├── dotnet-model-trainer/          # Model training tool (separate project)
 │   ├── ModelTrainer.csproj
-│   └── Program.cs       # Training logic with validation
-├── Program.cs           # API endpoints and startup
-├── GrittingApi.csproj   # Project file
-├── Dockerfile           # Container image (includes training)
-└── docker-compose.yml   # Container orchestration
+│   ├── Program.cs                 # Training logic with validation
+│   └── README.md
+└── edinburgh_gritting_training_dataset.csv
 ```
 
 ## Dependencies
