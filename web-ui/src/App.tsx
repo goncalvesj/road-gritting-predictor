@@ -1,25 +1,64 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { Route, WeatherData, PredictResponse } from './types';
 import './index.css';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
+// Wind chill calculation (simplified formula)
+function calculateFeelsLike(tempC: number, windKmh: number): number {
+  if (tempC > 10 || windKmh < 4.8) return tempC;
+  const feelsLike = 13.12 + 0.6215 * tempC - 11.37 * Math.pow(windKmh, 0.16) + 0.3965 * tempC * Math.pow(windKmh, 0.16);
+  return Math.round(feelsLike * 10) / 10;
+}
+
+// Road surface temp estimate (typically 1-2°C below air temp at night)
+function calculateRoadSurfaceTemp(tempC: number): number {
+  return Math.round((tempC - 1.5) * 10) / 10;
+}
+
 function App() {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [selectedRoute, setSelectedRoute] = useState('');
-  const [weather, setWeather] = useState<WeatherData>({
-    temperature_c: -3.5,
-    feels_like_c: -7.2,
-    humidity_pct: 88,
-    wind_speed_kmh: 18,
-    precipitation_type: 'snow',
-    precipitation_prob_pct: 85,
-    road_surface_temp_c: -4.2,
-    forecast_min_temp_c: -5.0,
-  });
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  
+  // Core weather inputs (simplified)
+  const [temperature, setTemperature] = useState(-3.5);
+  const [humidity, setHumidity] = useState(88);
+  const [windSpeed, setWindSpeed] = useState(18);
+  const [precipType, setPrecipType] = useState('snow');
+  const [precipProb, setPrecipProb] = useState(85);
+  const [forecastMin, setForecastMin] = useState(-5.0);
+  
+  // Advanced overrides
+  const [manualFeelsLike, setManualFeelsLike] = useState<number | null>(null);
+  const [manualRoadTemp, setManualRoadTemp] = useState<number | null>(null);
+
   const [prediction, setPrediction] = useState<PredictResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Auto-calculated values
+  const feelsLike = useMemo(() => 
+    manualFeelsLike ?? calculateFeelsLike(temperature, windSpeed),
+    [temperature, windSpeed, manualFeelsLike]
+  );
+  
+  const roadSurfaceTemp = useMemo(() => 
+    manualRoadTemp ?? calculateRoadSurfaceTemp(temperature),
+    [temperature, manualRoadTemp]
+  );
+
+  // Construct full weather object for API
+  const weather: WeatherData = useMemo(() => ({
+    temperature_c: temperature,
+    feels_like_c: feelsLike,
+    humidity_pct: humidity,
+    wind_speed_kmh: windSpeed,
+    precipitation_type: precipType,
+    precipitation_prob_pct: precipProb,
+    road_surface_temp_c: roadSurfaceTemp,
+    forecast_min_temp_c: forecastMin,
+  }), [temperature, feelsLike, humidity, windSpeed, precipType, precipProb, roadSurfaceTemp, forecastMin]);
 
   useEffect(() => {
     fetchRoutes();
@@ -65,188 +104,220 @@ function App() {
     }
   };
 
-  const handleWeatherChange = (field: keyof WeatherData, value: string) => {
-    setWeather((prev) => {
-      if (field === 'precipitation_type') {
-        return { ...prev, [field]: value };
-      }
-      // Allow empty string for better UX when clearing fields
-      if (value === '') {
-        return { ...prev, [field]: 0 };
-      }
-      const numValue = parseFloat(value);
-      if (isNaN(numValue)) return prev;
-      return { ...prev, [field]: numValue };
-    });
-  };
-
   return (
-    <div className="container">
-      <h1>Road Gritting Predictor</h1>
+    <div className="app">
+      <header className="header">
+        <h1>🚛 Road Gritting Predictor</h1>
+        <p>ML-powered winter road maintenance decisions</p>
+      </header>
 
-      {error && <div className="error">{error}</div>}
+      <div className="container">
+        {error && <div className="error">⚠️ {error}</div>}
 
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label>Route</label>
-          <select
-            value={selectedRoute}
-            onChange={(e) => setSelectedRoute(e.target.value)}
-            required
-          >
-            {routes.map((route) => (
-              <option key={route.route_id} value={route.route_id}>
-                {route.route_name} (Priority {route.priority}, {route.length_km} km)
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <h2>Weather Conditions</h2>
-
-        <div className="weather-grid">
-          <div className="form-group">
-            <label>Temperature (°C)</label>
-            <input
-              type="number"
-              step="0.1"
-              value={weather.temperature_c}
-              onChange={(e) => handleWeatherChange('temperature_c', e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Feels Like (°C)</label>
-            <input
-              type="number"
-              step="0.1"
-              value={weather.feels_like_c}
-              onChange={(e) => handleWeatherChange('feels_like_c', e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Humidity (%)</label>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              value={weather.humidity_pct}
-              onChange={(e) => handleWeatherChange('humidity_pct', e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Wind Speed (km/h)</label>
-            <input
-              type="number"
-              step="0.1"
-              value={weather.wind_speed_kmh}
-              onChange={(e) => handleWeatherChange('wind_speed_kmh', e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Precipitation Type</label>
-            <select
-              value={weather.precipitation_type}
-              onChange={(e) => handleWeatherChange('precipitation_type', e.target.value)}
-              required
-            >
-              <option value="none">None</option>
-              <option value="rain">Rain</option>
-              <option value="snow">Snow</option>
-              <option value="sleet">Sleet</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label>Precipitation Probability (%)</label>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              value={weather.precipitation_prob_pct}
-              onChange={(e) => handleWeatherChange('precipitation_prob_pct', e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Road Surface Temp (°C)</label>
-            <input
-              type="number"
-              step="0.1"
-              value={weather.road_surface_temp_c}
-              onChange={(e) => handleWeatherChange('road_surface_temp_c', e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Forecast Min Temp (°C)</label>
-            <input
-              type="number"
-              step="0.1"
-              value={weather.forecast_min_temp_c}
-              onChange={(e) => handleWeatherChange('forecast_min_temp_c', e.target.value)}
-              required
-            />
-          </div>
-        </div>
-
-        <button type="submit" disabled={loading || !selectedRoute}>
-          {loading ? 'Predicting...' : 'Get Prediction'}
-        </button>
-      </form>
-
-      {prediction && prediction.success && (
-        <div className="prediction-result">
-          <h2>Prediction Result</h2>
-          <div className="result-grid">
-            <div className="result-item">
-              <strong>Route:</strong> {prediction.prediction.route_name}
+        <form onSubmit={handleSubmit}>
+          {/* Route Selection Card */}
+          <div className="card">
+            <div className="card-header">
+              <span className="card-icon">🛣️</span>
+              <h2>Select Route</h2>
             </div>
-            <div className="result-item">
-              <strong>Decision:</strong>{' '}
-              <span className={`decision ${prediction.prediction.gritting_decision}`}>
-                {prediction.prediction.gritting_decision.toUpperCase()}
-              </span>
-            </div>
-            <div className="result-item">
-              <strong>Confidence:</strong> {(prediction.prediction.decision_confidence * 100).toFixed(1)}%
-            </div>
-            <div className="result-item">
-              <strong>Salt Amount:</strong> {prediction.prediction.salt_amount_kg} kg
-            </div>
-            <div className="result-item">
-              <strong>Spread Rate:</strong> {prediction.prediction.spread_rate_g_m2} g/m²
-            </div>
-            <div className="result-item">
-              <strong>Est. Duration:</strong> {prediction.prediction.estimated_duration_min} min
-            </div>
-            <div className="result-item">
-              <strong>Ice Risk:</strong>{' '}
-              <span className={`risk ${prediction.prediction.ice_risk}`}>
-                {prediction.prediction.ice_risk}
-              </span>
-            </div>
-            <div className="result-item">
-              <strong>Snow Risk:</strong>{' '}
-              <span className={`risk ${prediction.prediction.snow_risk}`}>
-                {prediction.prediction.snow_risk}
-              </span>
-            </div>
-            <div className="result-item full-width">
-              <strong>Recommendation:</strong> {prediction.prediction.recommendation}
+            <div className="card-body">
+              <div className="form-group">
+                <label>Route</label>
+                <select
+                  value={selectedRoute}
+                  onChange={(e) => setSelectedRoute(e.target.value)}
+                  required
+                >
+                  {routes.map((route) => (
+                    <option key={route.route_id} value={route.route_id}>
+                      {route.route_name} — Priority {route.priority}, {route.length_km} km
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+
+          {/* Weather Conditions Card */}
+          <div className="card">
+            <div className="card-header">
+              <span className="card-icon">🌡️</span>
+              <h2>Weather Conditions</h2>
+            </div>
+            <div className="card-body">
+              <div className="weather-grid">
+                <div className="form-group">
+                  <label>Temperature (°C)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={temperature}
+                    onChange={(e) => setTemperature(parseFloat(e.target.value) || 0)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Forecast Min (°C)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={forecastMin}
+                    onChange={(e) => setForecastMin(parseFloat(e.target.value) || 0)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Humidity (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={humidity}
+                    onChange={(e) => setHumidity(parseInt(e.target.value) || 0)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Wind Speed (km/h)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    value={windSpeed}
+                    onChange={(e) => setWindSpeed(parseFloat(e.target.value) || 0)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Precipitation Type</label>
+                  <select
+                    value={precipType}
+                    onChange={(e) => setPrecipType(e.target.value)}
+                    required
+                  >
+                    <option value="none">☀️ None</option>
+                    <option value="rain">🌧️ Rain</option>
+                    <option value="snow">❄️ Snow</option>
+                    <option value="sleet">🌨️ Sleet</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Precipitation Chance (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={precipProb}
+                    onChange={(e) => setPrecipProb(parseInt(e.target.value) || 0)}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Advanced Options Toggle */}
+              <div 
+                className="advanced-toggle"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+              >
+                <span>{showAdvanced ? '▼' : '▶'}</span>
+                <span>Advanced Options (auto-calculated values)</span>
+              </div>
+
+              {showAdvanced && (
+                <div className="advanced-fields">
+                  <div className="weather-grid">
+                    <div className="form-group">
+                      <label>Feels Like (°C)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={manualFeelsLike ?? feelsLike}
+                        onChange={(e) => setManualFeelsLike(e.target.value === '' ? null : parseFloat(e.target.value))}
+                      />
+                      <div className="auto-calc-note">
+                        Auto: {calculateFeelsLike(temperature, windSpeed).toFixed(1)}°C
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Road Surface Temp (°C)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={manualRoadTemp ?? roadSurfaceTemp}
+                        onChange={(e) => setManualRoadTemp(e.target.value === '' ? null : parseFloat(e.target.value))}
+                      />
+                      <div className="auto-calc-note">
+                        Auto: {calculateRoadSurfaceTemp(temperature).toFixed(1)}°C
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <button type="submit" disabled={loading || !selectedRoute}>
+            {loading ? '⏳ Analyzing...' : '🔮 Get Prediction'}
+          </button>
+        </form>
+
+        {/* Results */}
+        {prediction && prediction.success && (
+          <div className="result-card" style={{ marginTop: '1.5rem' }}>
+            <div className={`result-header gritting-${prediction.prediction.gritting_decision}`}>
+              <div className="decision-icon">
+                {prediction.prediction.gritting_decision === 'yes' ? '✅' : '⏸️'}
+              </div>
+              <h2>
+                {prediction.prediction.gritting_decision === 'yes' 
+                  ? 'Gritting Required' 
+                  : 'No Gritting Needed'}
+              </h2>
+              <p>{prediction.prediction.route_name} • {(prediction.prediction.decision_confidence * 100).toFixed(0)}% confidence</p>
+            </div>
+            
+            <div className="result-body">
+              <div className="result-grid">
+                <div className="result-item highlight">
+                  <label>Salt Amount</label>
+                  <div className="value">{prediction.prediction.salt_amount_kg} kg</div>
+                </div>
+                <div className="result-item highlight">
+                  <label>Spread Rate</label>
+                  <div className="value">{prediction.prediction.spread_rate_g_m2} g/m²</div>
+                </div>
+                <div className="result-item">
+                  <label>Est. Duration</label>
+                  <div className="value">{prediction.prediction.estimated_duration_min} min</div>
+                </div>
+                <div className="result-item">
+                  <label>Risk Assessment</label>
+                  <div className="risk-badges">
+                    <span className={`risk-badge ${prediction.prediction.ice_risk}`}>
+                      🧊 Ice: {prediction.prediction.ice_risk}
+                    </span>
+                    <span className={`risk-badge ${prediction.prediction.snow_risk}`}>
+                      ❄️ Snow: {prediction.prediction.snow_risk}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="recommendation-box">
+                <label>💡 Recommendation</label>
+                <p>{prediction.prediction.recommendation}</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
