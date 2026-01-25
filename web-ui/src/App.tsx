@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import type { Route, WeatherData, PredictResponse } from './types';
+import type { Route, WeatherData, PredictResponse, Page } from './types';
+import { RoutesPage } from './RoutesPage';
+import { HistoryPage } from './HistoryPage';
 import './index.css';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -17,6 +19,7 @@ function calculateRoadSurfaceTemp(tempC: number): number {
 }
 
 function App() {
+  const [currentPage, setCurrentPage] = useState<Page>('predictor');
   const [routes, setRoutes] = useState<Route[]>([]);
   const [selectedRoute, setSelectedRoute] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -104,6 +107,35 @@ function App() {
     }
   };
 
+  // Render different pages
+  if (currentPage === 'routes') {
+    return (
+      <div className="app">
+        <header className="header">
+          <h1>🚛 Road Gritting Predictor</h1>
+          <p>ML-powered winter road maintenance decisions</p>
+        </header>
+        <div className="container">
+          <RoutesPage onBack={() => setCurrentPage('predictor')} />
+        </div>
+      </div>
+    );
+  }
+
+  if (currentPage === 'history') {
+    return (
+      <div className="app">
+        <header className="header">
+          <h1>🚛 Road Gritting Predictor</h1>
+          <p>ML-powered winter road maintenance decisions</p>
+        </header>
+        <div className="container">
+          <HistoryPage onBack={() => setCurrentPage('predictor')} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app">
       <header className="header">
@@ -112,6 +144,18 @@ function App() {
       </header>
 
       <div className="container">
+        {/* Navigation Cards */}
+        <div className="nav-cards">
+          <button className="nav-card" onClick={() => setCurrentPage('routes')}>
+            <span className="nav-icon">🛣️</span>
+            <span className="nav-label">View Routes</span>
+          </button>
+          <button className="nav-card" onClick={() => setCurrentPage('history')}>
+            <span className="nav-icon">📜</span>
+            <span className="nav-label">History</span>
+          </button>
+        </div>
+
         {error && <div className="error">⚠️ {error}</div>}
 
         <form onSubmit={handleSubmit}>

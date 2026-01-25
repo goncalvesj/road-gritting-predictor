@@ -42,3 +42,19 @@ export interface PredictResponse {
   prediction: Prediction;
   error?: string;
 }
+
+export interface HistoricalDecision {
+  id: string;
+  timestamp: string;
+  route_id: string;
+  route_name: string;
+  gritting_decision: string;
+  decision_confidence: number;
+  salt_amount_kg: number;
+  ice_risk: string;
+  snow_risk: string;
+  temperature_c: number;
+  precipitation_type: string;
+}
+
+export type Page = 'predictor' | 'routes' | 'history';
