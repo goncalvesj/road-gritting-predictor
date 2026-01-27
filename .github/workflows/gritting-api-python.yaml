@@ -47,7 +47,7 @@ jobs:
     name: Push Gritting API
     with:
       image-name: gritting-api-python
-      dockerfile-location: python-api/Dockerfile
+      dockerfile-location: Dockerfile
       build-context: python-api
     secrets: inherit
     permissions:

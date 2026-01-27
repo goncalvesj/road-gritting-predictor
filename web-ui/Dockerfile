@@ -8,7 +8,7 @@ RUN npm ci
 
 # Copy source code and build
 COPY . .
-ARG VITE_API_URL=http://localhost:8080
+ARG VITE_API_URL=https://road-gritting-api-sc.bravehill-7414198a.swedencentral.azurecontainerapps.io
 ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
