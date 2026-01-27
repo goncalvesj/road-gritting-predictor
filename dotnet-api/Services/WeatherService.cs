@@ -21,15 +21,17 @@ public class WeatherService
     // Road surface temperature is typically slightly lower than air temperature due to thermal radiation
     private const float RoadSurfaceTempOffsetC = 1.5f;
 
-    public WeatherService(ILogger<WeatherService> logger, HttpClient httpClient, IConfiguration configuration)
+    public WeatherService(
+        ILogger<WeatherService> logger, 
+        HttpClient httpClient, 
+        IConfiguration configuration,
+        ILogger<OpenMeteoWeatherService> openMeteoLogger)
     {
         _logger = logger;
         _httpClient = httpClient;
         _apiKey = configuration["OPENWEATHER_API_KEY"] ?? Environment.GetEnvironmentVariable("OPENWEATHER_API_KEY");
         
-        // Initialize Open-Meteo service
-        var openMeteoLogger = logger as ILogger<OpenMeteoWeatherService> ?? 
-            new LoggerFactory().CreateLogger<OpenMeteoWeatherService>();
+        // Initialize Open-Meteo service with proper logger
         _openMeteoService = new OpenMeteoWeatherService(openMeteoLogger, httpClient);
     }
 

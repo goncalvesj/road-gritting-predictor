@@ -18,6 +18,11 @@ public class OpenMeteoWeatherService
     // Road surface temperature is typically slightly lower than air temperature due to thermal radiation
     private const float RoadSurfaceTempOffsetC = 1.5f;
 
+    // Weather code mappings for precipitation type (using HashSets for efficient lookup)
+    private static readonly HashSet<int> SnowCodes = new() { 71, 73, 75, 77, 85, 86 };
+    private static readonly HashSet<int> SleetCodes = new() { 56, 57, 66, 67, 96, 99 };
+    private static readonly HashSet<int> RainCodes = new() { 51, 53, 55, 61, 63, 65, 80, 81, 82, 95 };
+
     public OpenMeteoWeatherService(ILogger<OpenMeteoWeatherService> logger, HttpClient httpClient)
     {
         _logger = logger;
@@ -167,15 +172,15 @@ public class OpenMeteoWeatherService
     private string MapWeatherCodeToPrecipitation(int weatherCode)
     {
         // Snow conditions
-        if (weatherCode is 71 or 73 or 75 or 77 or 85 or 86)
+        if (SnowCodes.Contains(weatherCode))
             return "snow";
 
         // Sleet/freezing conditions (freezing rain, freezing drizzle, thunderstorm with hail)
-        if (weatherCode is 56 or 57 or 66 or 67 or 96 or 99)
+        if (SleetCodes.Contains(weatherCode))
             return "sleet";
 
         // Rain conditions (drizzle, rain, rain showers, thunderstorm)
-        if (weatherCode is 51 or 53 or 55 or 61 or 63 or 65 or 80 or 81 or 82 or 95)
+        if (RainCodes.Contains(weatherCode))
             return "rain";
 
         // Clear, cloudy, fog - no precipitation

@@ -25,6 +25,12 @@ class OpenMeteoWeatherService:
     # Road surface temperature is typically slightly lower than air temperature due to thermal radiation
     ROAD_SURFACE_TEMP_OFFSET_C = 1.5
     
+    # Weather code mappings for precipitation type
+    # Using sets for efficient lookup and maintainability
+    SNOW_CODES = {71, 73, 75, 77, 85, 86}
+    SLEET_CODES = {56, 57, 66, 67, 96, 99}
+    RAIN_CODES = {51, 53, 55, 61, 63, 65, 80, 81, 82, 95}
+    
     def __init__(self):
         """Initialize the Open-Meteo weather service"""
         pass
@@ -103,11 +109,13 @@ class OpenMeteoWeatherService:
             # Get precipitation probability from hourly forecast (next hour)
             precipitation_prob_pct = 0.0
             if 'precipitation_probability' in hourly and hourly['precipitation_probability']:
-                # Get the first non-null probability value (current or next hour)
-                for prob in hourly['precipitation_probability'][:3]:  # Check first 3 hours
-                    if prob is not None:
-                        precipitation_prob_pct = float(prob)
-                        break
+                precip_probs = hourly['precipitation_probability']
+                if len(precip_probs) > 0:  # Ensure list is not empty
+                    # Get the first non-null probability value (current or next hour)
+                    for prob in precip_probs[:3]:  # Check first 3 hours
+                        if prob is not None:
+                            precipitation_prob_pct = float(prob)
+                            break
             
             # Get minimum temperature from hourly forecast (next 24 hours)
             forecast_min_temp_c = temperature_c
@@ -158,15 +166,15 @@ class OpenMeteoWeatherService:
             str: One of 'none', 'rain', 'sleet', 'snow'
         """
         # Snow conditions
-        if weather_code in [71, 73, 75, 77, 85, 86]:
+        if weather_code in self.SNOW_CODES:
             return 'snow'
         
         # Sleet/freezing conditions (freezing rain, freezing drizzle, thunderstorm with hail)
-        if weather_code in [56, 57, 66, 67, 96, 99]:
+        if weather_code in self.SLEET_CODES:
             return 'sleet'
         
         # Rain conditions (drizzle, rain, rain showers, thunderstorm)
-        if weather_code in [51, 53, 55, 61, 63, 65, 80, 81, 82, 95]:
+        if weather_code in self.RAIN_CODES:
             return 'rain'
         
         # Clear, cloudy, fog - no precipitation
