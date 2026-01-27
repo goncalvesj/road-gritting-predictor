@@ -110,7 +110,7 @@ class OpenMeteoWeatherService:
             precipitation_prob_pct = 0.0
             if 'precipitation_probability' in hourly and hourly['precipitation_probability']:
                 precip_probs = hourly['precipitation_probability']
-                if len(precip_probs) > 0:  # Ensure list is not empty
+                if precip_probs:  # Ensure list is not empty
                     # Get the first non-null probability value (current or next hour)
                     for prob in precip_probs[:3]:  # Check first 3 hours
                         if prob is not None:

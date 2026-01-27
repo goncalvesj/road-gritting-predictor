@@ -6,6 +6,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services
 builder.Services.AddSingleton<GrittingPredictionService>();
+builder.Services.AddHttpClient<OpenMeteoWeatherService>()
+    .ConfigureHttpClient(client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(10);
+    });
 builder.Services.AddHttpClient<WeatherService>()
     .ConfigureHttpClient(client =>
     {

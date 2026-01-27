@@ -17,6 +17,8 @@ public class OpenMeteoWeatherService
     // Constants for weather estimation
     // Road surface temperature is typically slightly lower than air temperature due to thermal radiation
     private const float RoadSurfaceTempOffsetC = 1.5f;
+    // Maximum hours to check for precipitation probability
+    private const int MaxHoursToCheck = 3;
 
     // Weather code mappings for precipitation type (using HashSets for efficient lookup)
     private static readonly HashSet<int> SnowCodes = new() { 71, 73, 75, 77, 85, 86 };
@@ -88,7 +90,7 @@ public class OpenMeteoWeatherService
             {
                 // Get the first non-null probability value (current or next hour)
                 var arrayLength = precipProbArray.GetArrayLength();
-                for (int i = 0; i < Math.Min(3, arrayLength); i++)  // Check first 3 hours
+                for (int i = 0; i < Math.Min(MaxHoursToCheck, arrayLength); i++)
                 {
                     var prob = precipProbArray[i];
                     if (prob.ValueKind != JsonValueKind.Null)

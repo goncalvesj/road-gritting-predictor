@@ -1,9 +1,10 @@
 """
 Unit test for Open-Meteo weather service (with mocked HTTP responses)
 """
-from open_meteo_weather_service import OpenMeteoWeatherService
 import json
 from unittest.mock import Mock, patch
+
+from open_meteo_weather_service import OpenMeteoWeatherService
 
 # Mock response data from Open-Meteo API
 mock_response_data = {

@@ -25,14 +25,14 @@ public class WeatherService
         ILogger<WeatherService> logger, 
         HttpClient httpClient, 
         IConfiguration configuration,
-        ILogger<OpenMeteoWeatherService> openMeteoLogger)
+        OpenMeteoWeatherService openMeteoService)
     {
         _logger = logger;
         _httpClient = httpClient;
         _apiKey = configuration["OPENWEATHER_API_KEY"] ?? Environment.GetEnvironmentVariable("OPENWEATHER_API_KEY");
         
-        // Initialize Open-Meteo service with proper logger
-        _openMeteoService = new OpenMeteoWeatherService(openMeteoLogger, httpClient);
+        // Use injected Open-Meteo service
+        _openMeteoService = openMeteoService;
     }
 
     /// <summary>
