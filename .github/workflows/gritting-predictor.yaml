@@ -4,11 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - '*.py'
-      - 'requirements.txt'
-      - 'Dockerfile'
-      - 'docker-compose.yml'
-      - '*.csv'
+      - 'python-api/**'
       - '.github/workflows/gritting-predictor.yaml'
   workflow_dispatch:
 
@@ -27,19 +23,21 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
+          cache-dependency-path: 'python-api/requirements.txt'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r python-api/requirements.txt
           pip install flake8
 
       - name: Run linting
         run: |
-          flake8 . --count --select=E9,F63,F7 --show-source --statistics
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+          flake8 python-api/ --count --select=E9,F63,F7 --show-source --statistics
+          flake8 python-api/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
       - name: Train models and verify system
+        working-directory: python-api
         run: |
           python gritting_prediction_system.py
 
@@ -49,8 +47,8 @@ jobs:
     name: Push Gritting Predictor
     with:
       image-name: gritting-predictor
-      dockerfile-location: Dockerfile
-      build-context: .
+      dockerfile-location: python-api/Dockerfile
+      build-context: python-api
     secrets: inherit
     permissions:
       contents: read

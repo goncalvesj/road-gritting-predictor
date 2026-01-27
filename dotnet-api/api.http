@@ -1,0 +1,125 @@
+@baseUrl = http://localhost:5000
+
+### Health Check
+GET {{baseUrl}}/health
+
+### Get All Routes
+GET {{baseUrl}}/routes
+
+### Direct Prediction - Cold weather with snow (requires gritting)
+POST {{baseUrl}}/predict
+Content-Type: application/json
+
+{
+    "route_id": "R001",
+    "weather": {
+        "temperature_c": -3.5,
+        "feels_like_c": -7.2,
+        "humidity_pct": 88,
+        "wind_speed_kmh": 18,
+        "precipitation_type": "snow",
+        "precipitation_prob_pct": 85,
+        "road_surface_temp_c": -4.2,
+        "forecast_min_temp_c": -5.0
+    }
+}
+
+### Direct Prediction - Mild weather (likely no gritting needed)
+POST {{baseUrl}}/predict
+Content-Type: application/json
+
+{
+    "route_id": "R002",
+    "weather": {
+        "temperature_c": 8.0,
+        "feels_like_c": 6.5,
+        "humidity_pct": 65,
+        "wind_speed_kmh": 12,
+        "precipitation_type": "none",
+        "precipitation_prob_pct": 10,
+        "road_surface_temp_c": 7.5,
+        "forecast_min_temp_c": 5.0
+    }
+}
+
+### Direct Prediction - Freezing rain conditions
+POST {{baseUrl}}/predict
+Content-Type: application/json
+
+{
+    "route_id": "R003",
+    "weather": {
+        "temperature_c": 0.5,
+        "feels_like_c": -2.0,
+        "humidity_pct": 95,
+        "wind_speed_kmh": 8,
+        "precipitation_type": "freezing_rain",
+        "precipitation_prob_pct": 90,
+        "road_surface_temp_c": -1.0,
+        "forecast_min_temp_c": -2.5
+    }
+}
+
+### Auto-Weather Prediction - Edinburgh coordinates
+# Note: Requires weather API key to be configured
+POST {{baseUrl}}/predict/auto-weather
+Content-Type: application/json
+
+{
+    "route_id": "R002",
+    "latitude": 55.9533,
+    "longitude": -3.1883
+}
+
+### Error Case - Missing route_id
+POST {{baseUrl}}/predict
+Content-Type: application/json
+
+{
+    "weather": {
+        "temperature_c": -3.5,
+        "feels_like_c": -7.2,
+        "humidity_pct": 88,
+        "wind_speed_kmh": 18,
+        "precipitation_type": "snow",
+        "precipitation_prob_pct": 85,
+        "road_surface_temp_c": -4.2,
+        "forecast_min_temp_c": -5.0
+    }
+}
+
+### Error Case - Invalid route_id
+POST {{baseUrl}}/predict
+Content-Type: application/json
+
+{
+    "route_id": "INVALID",
+    "weather": {
+        "temperature_c": -3.5,
+        "feels_like_c": -7.2,
+        "humidity_pct": 88,
+        "wind_speed_kmh": 18,
+        "precipitation_type": "snow",
+        "precipitation_prob_pct": 85,
+        "road_surface_temp_c": -4.2,
+        "forecast_min_temp_c": -5.0
+    }
+}
+
+### Error Case - Invalid humidity (out of range)
+POST {{baseUrl}}/predict
+Content-Type: application/json
+
+{
+    "route_id": "R001",
+    "weather": {
+        "temperature_c": -3.5,
+        "feels_like_c": -7.2,
+        "humidity_pct": 150,
+        "wind_speed_kmh": 18,
+        "precipitation_type": "snow",
+        "precipitation_prob_pct": 85,
+        "road_surface_temp_c": -4.2,
+        "forecast_min_temp_c": -5.0
+    }
+}

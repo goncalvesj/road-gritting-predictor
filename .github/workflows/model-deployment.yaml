@@ -4,9 +4,9 @@ on:
   push:
     branches: [main]
     paths:
-      - 'gritting_prediction_system.py'
-      - 'edinburgh_gritting_training_dataset.csv'
-      - 'routes_database.csv'
+      - 'python-api/gritting_prediction_system.py'
+      - 'python-api/edinburgh_gritting_training_dataset.csv'
+      - 'python-api/routes_database.csv'
       - '.github/workflows/model-deployment.yaml'
   workflow_dispatch:
 
@@ -25,13 +25,15 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
+          cache-dependency-path: 'python-api/requirements.txt'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r python-api/requirements.txt
 
       - name: Train models
+        working-directory: python-api
         run: |
           python gritting_prediction_system.py
 
@@ -39,7 +41,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: trained-models
-          path: models/
+          path: python-api/models/
           retention-days: 1
 
   deploy-models-to-blob:

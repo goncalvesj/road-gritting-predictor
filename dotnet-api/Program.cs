@@ -12,11 +12,25 @@ builder.Services.AddHttpClient<WeatherService>()
         client.Timeout = TimeSpan.FromSeconds(10);
     });
 
+// Configure CORS
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 // Configure logging
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
 var app = builder.Build();
+
+// Enable CORS
+app.UseCors();
 
 // Initialize prediction service
 var predictionService = app.Services.GetRequiredService<GrittingPredictionService>();
