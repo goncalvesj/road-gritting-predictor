@@ -43,7 +43,7 @@ jobs:
     name: Push Web UI
     with:
       image-name: gritting-web-ui
-      dockerfile-location: web-ui/Dockerfile
+      dockerfile-location: Dockerfile
       build-context: web-ui
     secrets: inherit
     permissions:
