@@ -272,7 +272,8 @@ def predict_with_auto_weather():
         return jsonify({
             'success': True,
             'prediction': result,
-            'weather_source': 'api'
+            'weather': weather_data,
+            'weather_source': 'open-meteo'
         }), 200
         
     except RuntimeError as e:

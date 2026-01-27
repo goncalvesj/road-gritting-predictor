@@ -57,4 +57,17 @@ export interface HistoricalDecision {
   precipitation_type: string;
 }
 
-export type Page = 'predictor' | 'routes' | 'history';
+export interface AutoWeatherRequest {
+  route_id: string;
+  latitude: number;
+  longitude: number;
+}
+
+export interface AutoWeatherResponse {
+  success: boolean;
+  prediction: Prediction;
+  weather_source: string;
+  error?: string;
+}
+
+export type Page = 'predictor' | 'routes' | 'history' | 'auto-weather';
