@@ -7,7 +7,7 @@ A production-ready .NET 10 Web API for road gritting predictions using ML.NET. T
 - **ML.NET Models**: Binary classification for gritting decision, regression for salt amount
 - **Separate Model Training**: Dedicated `dotnet-model-trainer` tool for training models independently from the API
 - **RESTful API**: Four endpoints matching Python API functionality
-- **Auto-weather**: Integration with OpenWeatherMap API
+- **Auto-weather**: Integration with Open-Meteo API (primary) and OpenWeatherMap (fallback)
 - **Containerized**: Docker support for easy deployment
 - **Risk Assessment**: Automatic ice and snow risk calculation
 
@@ -27,7 +27,7 @@ This separation allows:
 
 - .NET 10 Preview SDK
 - Docker (for containerized deployment)
-- OpenWeatherMap API key (for auto-weather endpoint)
+- OpenWeatherMap API key (optional, for fallback if Open-Meteo is unavailable)
 
 ## Quick Start
 
@@ -116,7 +116,7 @@ Make gritting prediction with manual weather data.
 ```
 
 ### 2. POST /predict/auto-weather
-Fetch weather automatically from OpenWeatherMap API.
+Fetch weather automatically from Open-Meteo API (no API key required). Falls back to OpenWeatherMap if Open-Meteo is unavailable and `OPENWEATHER_API_KEY` is set.
 
 **Request:**
 ```json
@@ -129,7 +129,7 @@ Fetch weather automatically from OpenWeatherMap API.
 
 **Response:** Same as /predict with additional `"weather_source": "api"` field.
 
-**Requirements:** Set `OPENWEATHER_API_KEY` environment variable.
+**Weather Provider:** Uses Open-Meteo by default (no API key required). Falls back to OpenWeatherMap if `OPENWEATHER_API_KEY` environment variable is set and Open-Meteo is unavailable.
 
 ### 3. GET /routes
 List all available routes.
@@ -205,7 +205,7 @@ The ModelTrainer validates models after training:
 ## Configuration
 
 ### Environment Variables
-- `OPENWEATHER_API_KEY`: OpenWeatherMap API key (required for /predict/auto-weather)
+- `OPENWEATHER_API_KEY`: OpenWeatherMap API key (optional, used as fallback if Open-Meteo is unavailable)
 - `ASPNETCORE_ENVIRONMENT`: Environment setting (Development/Production)
 - `ASPNETCORE_URLS`: Listening URLs (default: http://+:5000)
 
@@ -236,7 +236,8 @@ road-gritting-ml-predictor/
 │   │   └── MLModels.cs
 │   ├── Services/                  # Business logic
 │   │   ├── GrittingPredictionService.cs
-│   │   └── WeatherService.cs
+│   │   ├── WeatherService.cs
+│   │   └── OpenMeteoWeatherService.cs
 │   ├── Program.cs                 # API endpoints and startup
 │   ├── GrittingApi.csproj         # Project file
 │   ├── Dockerfile                 # Container image

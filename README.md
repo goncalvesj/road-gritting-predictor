@@ -218,7 +218,7 @@ Make a gritting prediction with weather data
 ```
 
 ### POST /predict/auto-weather
-Fetch weather automatically from API (requires `OPENWEATHER_API_KEY` environment variable)
+Fetch weather automatically from API. Uses **Open-Meteo** as the primary weather provider (no API key required). Falls back to OpenWeatherMap if `OPENWEATHER_API_KEY` environment variable is set and Open-Meteo is unavailable.
 
 **Request:**
 ```json
@@ -228,6 +228,10 @@ Fetch weather automatically from API (requires `OPENWEATHER_API_KEY` environment
   "longitude": -3.1883
 }
 ```
+
+**Weather Provider:**
+- **Primary**: [Open-Meteo](https://open-meteo.com/) - Free, open-source weather API with no API key required
+- **Fallback**: OpenWeatherMap - Requires `OPENWEATHER_API_KEY` environment variable
 
 ### GET /routes
 List all available routes
@@ -251,8 +255,21 @@ cd python-api
 python gritting_prediction_system.py
 ```
 
-### Integrate Your Weather API
-Edit `python-api/gritting_api.py` → `fetch_weather_from_api()` function
+### Weather Provider Integration
+
+The system uses **Open-Meteo** as the default weather provider (no API key required).
+
+**Python API:**
+- Main service: `python-api/open_meteo_weather_service.py`
+- Integration: `python-api/gritting_api.py` → `fetch_weather_from_api()` function
+- Fallback: OpenWeatherMap (if `OPENWEATHER_API_KEY` is set)
+
+**Dotnet API:**
+- Main service: `dotnet-api/Services/OpenMeteoWeatherService.cs`
+- Integration: `dotnet-api/Services/WeatherService.cs`
+- Fallback: OpenWeatherMap (if `OPENWEATHER_API_KEY` is set)
+
+To use a different weather provider, implement a new weather service class following the existing patterns.
 
 ## Model Performance
 
@@ -277,6 +294,7 @@ The system follows **NWSRG (National Winter Service Research Group)** guidelines
 - **Edinburgh Council Open Data**: https://github.com/edinburghcouncil/datasets-transport
 - **NWSRG Guidelines**: https://nwsrg.org/practical-guidance-documents
 - **UK Met Office**: Road weather information standards
+- **Open-Meteo Weather API**: https://open-meteo.com/ - Free, open-source weather data with no API key required
 
 ## License
 
@@ -296,7 +314,7 @@ For questions or issues, please open a GitHub issue.
 ## Future Enhancements
 
 - [x] Docker containerization with Docker Compose
-- [ ] Real-time weather API integration (OpenWeatherMap, Met Office)
+- [x] Real-time weather API integration (Open-Meteo, OpenWeatherMap)
 - [ ] Multi-route batch predictions
 - [ ] Historical tracking and analytics dashboard
 - [ ] Deep learning models (LSTM for time-series prediction)
