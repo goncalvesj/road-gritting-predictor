@@ -53,7 +53,7 @@ Content-Type: application/json
         "feels_like_c": -2.0,
         "humidity_pct": 95,
         "wind_speed_kmh": 8,
-        "precipitation_type": "freezing_rain",
+        "precipitation_type": "sleet",
         "precipitation_prob_pct": 90,
         "road_surface_temp_c": -1.0,
         "forecast_min_temp_c": -2.5
@@ -131,4 +131,22 @@ Content-Type: application/json
         "road_surface_temp_c": -4.2,
         "forecast_min_temp_c": -5.0
     }
+}
+
+### Error Case - Missing weather field
+POST {{baseUrl}}/predict
+Content-Type: application/json
+
+{
+    "route_id": "R001"
+}
+
+### Error Case - Invalid coordinates (out of range)
+POST {{baseUrl}}/predict/auto-weather
+Content-Type: application/json
+
+{
+    "route_id": "R001",
+    "latitude": 95.0,
+    "longitude": -3.1883
 }

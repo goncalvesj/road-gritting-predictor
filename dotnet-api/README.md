@@ -38,7 +38,7 @@ Before running the API, you must train the models using the ModelTrainer tool:
 ```bash
 # From repository root
 cd dotnet-model-trainer
-dotnet run ../edinburgh_gritting_training_dataset.csv ../dotnet-api/models
+dotnet run ../data/edinburgh_gritting_training_dataset.csv ../dotnet-api/models
 
 # Or with default paths (from dotnet-model-trainer directory):
 dotnet run
@@ -170,8 +170,8 @@ Models are saved in ML.NET's native `.zip` format, which:
 - Is validated during the training process
 
 ### Training Data
-- **Source**: `edinburgh_gritting_training_dataset.csv`
-- **Routes**: `routes_database.csv`
+- **Source**: `data/edinburgh_gritting_training_dataset.csv`
+- **Routes**: `data/routes_database.csv`
 
 ### Features (15 total)
 - Route metadata: priority, route_length_km
@@ -219,7 +219,7 @@ rm -rf models/
 
 # Run ModelTrainer from dotnet-model-trainer folder
 cd ../dotnet-model-trainer
-dotnet run ../edinburgh_gritting_training_dataset.csv ../dotnet-api/models
+dotnet run ../data/edinburgh_gritting_training_dataset.csv ../dotnet-api/models
 ```
 
 ## Project Structure
@@ -246,6 +246,10 @@ road-gritting-ml-predictor/
 │   ├── ModelTrainer.csproj
 │   ├── Program.cs                 # Training logic with validation
 │   └── README.md
+├── data/                          # Training data and routes
+│   ├── edinburgh_gritting_training_dataset.csv
+│   ├── routes_database.csv
+│   └── DATASET_README.md
 └── edinburgh_gritting_training_dataset.csv
 ```
 

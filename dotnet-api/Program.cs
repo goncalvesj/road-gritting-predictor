@@ -44,9 +44,9 @@ var logger = app.Services.GetRequiredService<ILogger<Program>>();
 try
 {
     // Load routes
-    var routesPath = Path.Combine("..", "routes_database.csv");
+    var routesPath = Path.Combine("..", "data", "routes_database.csv");
     if (!File.Exists(routesPath))
-        routesPath = "routes_database.csv"; // Fallback for local dev
+        routesPath = Path.Combine("data", "routes_database.csv"); // Fallback for local dev
     
     predictionService.LoadRoutes(routesPath);
 
