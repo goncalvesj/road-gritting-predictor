@@ -1,0 +1,70 @@
+name: Gritting Predictor - Build, Push, and Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'python-api/**'
+      - '.github/workflows/gritting-predictor.yaml'
+  workflow_dispatch:
+
+jobs:
+  python-build:
+    name: Python build Gritting Predictor
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: 'python-api/requirements.txt'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r python-api/requirements.txt
+          pip install flake8
+
+      - name: Run linting
+        run: |
+          flake8 python-api/ --count --select=E9,F63,F7 --show-source --statistics
+          flake8 python-api/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+      - name: Train models and verify system
+        working-directory: python-api
+        run: |
+          python gritting_prediction_system.py
+
+  push-gritting-predictor-to-acr:
+    needs: python-build
+    uses: yxtc4/devops/.github/workflows/reusable-docker-push-to-acr.yml@main
+    name: Push Gritting Predictor
+    with:
+      image-name: gritting-predictor
+      dockerfile-location: python-api/Dockerfile
+      build-context: python-api
+    secrets: inherit
+    permissions:
+      contents: read
+      id-token: write
+
+  deploy-gritting-predictor-to-aca:
+    needs: push-gritting-predictor-to-acr
+    uses: yxtc4/devops/.github/workflows/reusable-deploy-to-aca.yml@main
+    name: Deploy Gritting Predictor to ACA
+    if: ${{ vars.GRITTING_PREDICTOR_RESOURCE_GROUP != '' && vars.GRITTING_PREDICTOR_ACA_NAME != '' }}
+    with:
+      resource-group: ${{ vars.GRITTING_PREDICTOR_RESOURCE_GROUP }}
+      aca-name: ${{ vars.GRITTING_PREDICTOR_ACA_NAME }}
+      image-uri: ${{ needs.push-gritting-predictor-to-acr.outputs.image-uri }}
+      image-digest: ${{ needs.push-gritting-predictor-to-acr.outputs.image-digest }}
+    secrets: inherit
+    permissions:
+      contents: read
+      id-token: write

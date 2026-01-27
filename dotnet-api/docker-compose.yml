@@ -13,3 +13,14 @@ services:
     volumes:
       - ./models:/app/models
     restart: unless-stopped
+
+  web-ui:
+    build:
+      context: ../web-ui
+      dockerfile: Dockerfile
+    container_name: gritting-web-ui
+    ports:
+      - "3000:80"
+    depends_on:
+      - gritting-api
+    restart: unless-stopped

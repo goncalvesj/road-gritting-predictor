@@ -19,6 +19,22 @@ npm run dev
 
 The Vite dev server will proxy `/api` requests to `http://localhost:5000`.
 
+## Docker
+
+The web UI is included in both the Python and .NET API docker-compose configurations:
+
+```bash
+# From python-api directory
+cd ../python-api
+docker-compose up -d
+# Web UI available at http://localhost:3000
+
+# OR from dotnet-api directory
+cd ../dotnet-api
+docker-compose up -d
+# Web UI available at http://localhost:3000
+```
+
 ## Build
 
 ```bash

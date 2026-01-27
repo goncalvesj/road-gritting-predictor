@@ -1,10 +1,12 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from gritting_prediction_system import GrittingPredictionSystem
 import requests
 import os
 import math
 
 app = Flask(__name__)
+CORS(app)
 
 # Initialize the prediction system (lazy-load models)
 system = None

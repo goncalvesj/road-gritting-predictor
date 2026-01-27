@@ -20,6 +20,17 @@ services:
       retries: 3
       start_period: 10s
 
+  web-ui:
+    build:
+      context: ../web-ui
+      dockerfile: Dockerfile
+    container_name: gritting-web-ui
+    ports:
+      - "3000:80"
+    depends_on:
+      - gritting-api
+    restart: unless-stopped
+
   # Development service with hot-reload
   gritting-api-dev:
     build:

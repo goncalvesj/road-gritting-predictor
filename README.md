@@ -21,7 +21,7 @@ The easiest way to run the application is using Docker:
 ```bash
 # Clone the repository
 git clone https://github.com/yxtc4/road-gritting-ml-predictor.git
-cd road-gritting-ml-predictor
+cd road-gritting-ml-predictor/python-api
 
 # Run with Docker Compose
 docker-compose up -d
@@ -46,7 +46,7 @@ docker-compose --profile dev up gritting-api-dev
 
 ```bash
 git clone https://github.com/yxtc4/road-gritting-ml-predictor.git
-cd road-gritting-ml-predictor
+cd road-gritting-ml-predictor/python-api
 pip install -r requirements.txt
 ```
 
@@ -104,26 +104,43 @@ curl -X POST http://localhost:5000/predict \
 road-gritting-ml-predictor/
 │
 ├── README.md                              # This file
-├── requirements.txt                       # Python dependencies
-├── .gitignore                            # Git ignore file
-├── Dockerfile                            # Docker container definition
-├── docker-compose.yml                    # Docker Compose configuration
-├── .dockerignore                         # Docker build context exclusions
+├── SOLUTION_REVIEW.md                     # Solution review documentation
 │
-├── Data Files
-│   ├── edinburgh_gritting_training_dataset.csv  # Training data (500 samples)
-│   ├── routes_database.csv                      # Route metadata
-│   └── DATASET_README.md                        # Dataset documentation
-│
-├── Core System
+├── python-api/                            # Python ML prediction system
+│   ├── requirements.txt                   # Python dependencies
+│   ├── Dockerfile                         # Docker container definition
+│   ├── docker-compose.yml                 # Docker Compose configuration
 │   ├── gritting_prediction_system.py     # Main ML prediction system
 │   ├── gritting_api.py                   # REST API wrapper (Flask)
-│   └── example_usage.py                  # Usage examples
+│   ├── example_usage.py                  # Usage examples
+│   ├── DATASET_README.md                 # Dataset documentation
+│   ├── edinburgh_gritting_training_dataset.csv  # Training data (500 samples)
+│   ├── routes_database.csv               # Route metadata
+│   └── models/                           # Saved models (created after training)
 │
-└── models/                                # Saved models (created after training)
-    ├── gritting_decision_model.pkl
-    ├── gritting_amount_model.pkl
-    └── gritting_*.pkl
+├── dotnet-api/                           # .NET Core API
+│   ├── Program.cs                        # API entry point
+│   ├── GrittingApi.csproj               # Project file
+│   ├── Dockerfile                        # Docker container definition
+│   ├── docker-compose.yml               # Docker Compose configuration
+│   ├── api.http                         # HTTP test file
+│   ├── Models/                          # Data models
+│   └── Services/                        # Business logic services
+│
+├── dotnet-model-trainer/                 # .NET ML model trainer
+│   ├── Program.cs                        # Trainer entry point
+│   └── ModelTrainer.csproj              # Project file
+│
+├── web-ui/                               # Web UI (React/TypeScript)
+│   ├── src/                             # Source code
+│   └── package.json                     # Dependencies
+│
+├── models/                               # Shared models directory
+│
+└── .github/workflows/                    # CI/CD workflows
+    ├── gritting-predictor.yaml          # Python API workflow
+    ├── gritting-api-dotnet.yaml         # .NET API workflow
+    └── model-deployment.yaml            # Model deployment workflow
 ```
 
 ## How It Works
@@ -173,7 +190,7 @@ The training dataset contains **500 samples** from synthetic Edinburgh winter gr
 - **Balanced classes**: 54% gritted vs 46% not_gritted
 - Based on **UK NWSRG standards** for spread rates (20-40 g/m²)
 
-See [DATASET_README.md](DATASET_README.md) for full documentation.
+See [python-api/DATASET_README.md](python-api/DATASET_README.md) for full documentation.
 
 ## API Endpoints
 
@@ -221,20 +238,21 @@ Health check endpoint - returns API status and whether models are loaded
 ## Extending the System
 
 ### Add New Routes
-Edit `routes_database.csv`:
+Edit `python-api/routes_database.csv`:
 ```csv
 route_id,route_name,priority,road_type,route_length_km
 R008,New Road Name,1,A-road,15.5
 ```
 
 ### Add More Training Data
-Append to `edinburgh_gritting_training_dataset.csv` and retrain:
+Append to `python-api/edinburgh_gritting_training_dataset.csv` and retrain:
 ```bash
+cd python-api
 python gritting_prediction_system.py
 ```
 
 ### Integrate Your Weather API
-Edit `gritting_api.py` → `fetch_weather_from_api()` function
+Edit `python-api/gritting_api.py` → `fetch_weather_from_api()` function
 
 ## Model Performance
 
