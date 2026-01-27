@@ -429,4 +429,4 @@ if __name__ == '__main__':
     # Note: debug=True should only be used in development
     # Set FLASK_DEBUG=1 environment variable to enable debug mode
     debug_mode = os.environ.get('FLASK_DEBUG', '0') == '1'
-    app.run(debug=debug_mode, host='0.0.0.0', port=5000)
+    app.run(debug=debug_mode, host='0.0.0.0', port=8080)

@@ -57,10 +57,10 @@ COPY python-api/routes_database.csv .
 COPY --from=trainer /models ./models
 
 # Expose port
-EXPOSE 5000
+EXPOSE 8080
 
 # Set environment
-ENV ASPNETCORE_URLS=http://+:5000
+ENV ASPNETCORE_URLS=http://+:8080
 
 # Run the application
 ENTRYPOINT ["dotnet", "GrittingApi.dll"]

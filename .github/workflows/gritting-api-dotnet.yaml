@@ -30,7 +30,7 @@ jobs:
     uses: yxtc4/devops/.github/workflows/reusable-docker-push-to-acr.yml@main
     name: Push Gritting API
     with:
-      image-name: gritting-api
+      image-name: gritting-api-dotnet
       dockerfile-location: dotnet-api/Dockerfile
       build-context: .
     secrets: inherit

@@ -1,4 +1,4 @@
-name: Gritting Predictor - Build, Push, and Deploy
+name: Gritting Predictor (Python) - Build, Push, and Deploy
 
 on:
   push:
@@ -41,12 +41,12 @@ jobs:
         run: |
           python gritting_prediction_system.py
 
-  push-gritting-predictor-to-acr:
+  push-gritting-api-to-acr:
     needs: python-build
     uses: yxtc4/devops/.github/workflows/reusable-docker-push-to-acr.yml@main
-    name: Push Gritting Predictor
+    name: Push Gritting API
     with:
-      image-name: gritting-predictor
+      image-name: gritting-api-python
       dockerfile-location: python-api/Dockerfile
       build-context: python-api
     secrets: inherit
@@ -54,16 +54,16 @@ jobs:
       contents: read
       id-token: write
 
-  deploy-gritting-predictor-to-aca:
-    needs: push-gritting-predictor-to-acr
+  deploy-gritting-api-to-aca:
+    needs: push-gritting-api-to-acr
     uses: yxtc4/devops/.github/workflows/reusable-deploy-to-aca.yml@main
-    name: Deploy Gritting Predictor to ACA
-    if: ${{ vars.GRITTING_PREDICTOR_RESOURCE_GROUP != '' && vars.GRITTING_PREDICTOR_ACA_NAME != '' }}
+    name: Deploy Gritting API to ACA
+    if: ${{ vars.GRITTING_API_RESOURCE_GROUP != '' && vars.GRITTING_API_ACA_NAME != '' }}
     with:
-      resource-group: ${{ vars.GRITTING_PREDICTOR_RESOURCE_GROUP }}
-      aca-name: ${{ vars.GRITTING_PREDICTOR_ACA_NAME }}
-      image-uri: ${{ needs.push-gritting-predictor-to-acr.outputs.image-uri }}
-      image-digest: ${{ needs.push-gritting-predictor-to-acr.outputs.image-digest }}
+      resource-group: ${{ vars.GRITTING_API_RESOURCE_GROUP }}
+      aca-name: ${{ vars.GRITTING_API_ACA_NAME }}
+      image-uri: ${{ needs.push-gritting-api-to-acr.outputs.image-uri }}
+      image-digest: ${{ needs.push-gritting-api-to-acr.outputs.image-digest }}
     secrets: inherit
     permissions:
       contents: read

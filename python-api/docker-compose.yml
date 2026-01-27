@@ -7,14 +7,14 @@ services:
       dockerfile: Dockerfile
     container_name: gritting-predictor
     ports:
-      - "5000:5000"
+      - "8080:8080"
     environment:
       - FLASK_DEBUG=0
       # Uncomment and set your API key for auto-weather feature
       # - OPENWEATHER_API_KEY=your_api_key_here
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -38,7 +38,7 @@ services:
       dockerfile: Dockerfile
     container_name: gritting-predictor-dev
     ports:
-      - "5001:5000"
+      - "8081:8080"
     environment:
       - FLASK_DEBUG=1
       # Uncomment and set your API key for auto-weather feature
@@ -50,7 +50,7 @@ services:
       - dev
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3

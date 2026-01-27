@@ -34,11 +34,11 @@ RUN mkdir -p models
 RUN python gritting_prediction_system.py
 
 # Expose the API port
-EXPOSE 5000
+EXPOSE 8080
 
 # Health check using curl (lighter weight than Python)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:5000/health || exit 1
+    CMD curl -f http://localhost:8080/health || exit 1
 
 # Run the Flask API
 CMD ["python", "gritting_api.py"]
