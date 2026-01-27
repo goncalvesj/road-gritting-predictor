@@ -1,4 +1,4 @@
-name: Gritting Predictor (Python) - Build, Push, and Deploy
+name: Gritting API (Python) - Build, Push, and Deploy
 
 on:
   push:

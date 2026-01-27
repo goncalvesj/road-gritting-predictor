@@ -17,7 +17,7 @@ Ensure the Flask API is running on port 5000, then:
 npm run dev
 ```
 
-The Vite dev server will proxy `/api` requests to `http://localhost:5000`.
+The Vite dev server will proxy `/api` requests to `http://localhost:8080`.
 
 ## Docker
 
