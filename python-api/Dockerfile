@@ -22,6 +22,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY gritting_prediction_system.py .
 COPY gritting_api.py .
+COPY open_meteo_weather_service.py .
 COPY edinburgh_gritting_training_dataset.csv .
 COPY routes_database.csv .
 

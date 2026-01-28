@@ -106,16 +106,20 @@ road-gritting-ml-predictor/
 ├── README.md                              # This file
 ├── SOLUTION_REVIEW.md                     # Solution review documentation
 │
+├── data/                                  # Training data and routes
+│   ├── DATASET_README.md                 # Dataset documentation
+│   ├── edinburgh_gritting_training_dataset.csv  # Training data (500 samples)
+│   └── routes_database.csv               # Route metadata
+│
 ├── python-api/                            # Python ML prediction system
 │   ├── requirements.txt                   # Python dependencies
 │   ├── Dockerfile                         # Docker container definition
 │   ├── docker-compose.yml                 # Docker Compose configuration
 │   ├── gritting_prediction_system.py     # Main ML prediction system
 │   ├── gritting_api.py                   # REST API wrapper (Flask)
+│   ├── open_meteo_weather_service.py     # Open-Meteo weather service
 │   ├── example_usage.py                  # Usage examples
-│   ├── DATASET_README.md                 # Dataset documentation
-│   ├── edinburgh_gritting_training_dataset.csv  # Training data (500 samples)
-│   ├── routes_database.csv               # Route metadata
+│   ├── api.http                          # HTTP test file
 │   └── models/                           # Saved models (created after training)
 │
 ├── dotnet-api/                           # .NET Core API
@@ -218,7 +222,7 @@ Make a gritting prediction with weather data
 ```
 
 ### POST /predict/auto-weather
-Fetch weather automatically from API (requires `OPENWEATHER_API_KEY` environment variable)
+Fetch weather automatically from API. Uses **Open-Meteo** as the primary weather provider (no API key required). Falls back to OpenWeatherMap if `OPENWEATHER_API_KEY` environment variable is set and Open-Meteo is unavailable.
 
 **Request:**
 ```json
@@ -229,6 +233,10 @@ Fetch weather automatically from API (requires `OPENWEATHER_API_KEY` environment
 }
 ```
 
+**Weather Provider:**
+- **Primary**: [Open-Meteo](https://open-meteo.com/) - Free, open-source weather API with no API key required
+- **Fallback**: OpenWeatherMap - Requires `OPENWEATHER_API_KEY` environment variable
+
 ### GET /routes
 List all available routes
 
@@ -238,21 +246,34 @@ Health check endpoint - returns API status and whether models are loaded
 ## Extending the System
 
 ### Add New Routes
-Edit `python-api/routes_database.csv`:
+Edit `data/routes_database.csv`:
 ```csv
 route_id,route_name,priority,road_type,route_length_km
 R008,New Road Name,1,A-road,15.5
 ```
 
 ### Add More Training Data
-Append to `python-api/edinburgh_gritting_training_dataset.csv` and retrain:
+Append to `data/edinburgh_gritting_training_dataset.csv` and retrain:
 ```bash
 cd python-api
 python gritting_prediction_system.py
 ```
 
-### Integrate Your Weather API
-Edit `python-api/gritting_api.py` → `fetch_weather_from_api()` function
+### Weather Provider Integration
+
+The system uses **Open-Meteo** as the default weather provider (no API key required).
+
+**Python API:**
+- Main service: `python-api/open_meteo_weather_service.py`
+- Integration: `python-api/gritting_api.py` → `fetch_weather_from_api()` function
+- Fallback: OpenWeatherMap (if `OPENWEATHER_API_KEY` is set)
+
+**Dotnet API:**
+- Main service: `dotnet-api/Services/OpenMeteoWeatherService.cs`
+- Integration: `dotnet-api/Services/WeatherService.cs`
+- Fallback: OpenWeatherMap (if `OPENWEATHER_API_KEY` is set)
+
+To use a different weather provider, implement a new weather service class following the existing patterns.
 
 ## Model Performance
 
@@ -277,6 +298,7 @@ The system follows **NWSRG (National Winter Service Research Group)** guidelines
 - **Edinburgh Council Open Data**: https://github.com/edinburghcouncil/datasets-transport
 - **NWSRG Guidelines**: https://nwsrg.org/practical-guidance-documents
 - **UK Met Office**: Road weather information standards
+- **Open-Meteo Weather API**: https://open-meteo.com/ - Free, open-source weather data with no API key required
 
 ## License
 
@@ -296,7 +318,7 @@ For questions or issues, please open a GitHub issue.
 ## Future Enhancements
 
 - [x] Docker containerization with Docker Compose
-- [ ] Real-time weather API integration (OpenWeatherMap, Met Office)
+- [x] Real-time weather API integration (Open-Meteo, OpenWeatherMap)
 - [ ] Multi-route batch predictions
 - [ ] Historical tracking and analytics dashboard
 - [ ] Deep learning models (LSTM for time-series prediction)

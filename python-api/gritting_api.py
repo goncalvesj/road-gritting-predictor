@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from gritting_prediction_system import GrittingPredictionSystem
+from open_meteo_weather_service import OpenMeteoWeatherService, OpenMeteoWeatherServiceError
 import requests
 import os
 import math
@@ -12,6 +13,9 @@ CORS(app)
 system = None
 _models_loaded = False
 
+# Initialize weather service
+weather_service = OpenMeteoWeatherService()
+
 
 def get_system():
     """
@@ -22,7 +26,7 @@ def get_system():
     
     if system is None:
         system = GrittingPredictionSystem()
-        system.load_route_database('routes_database.csv')
+        system.load_route_database('../data/routes_database.csv')
     
     if not _models_loaded:
         try:
@@ -268,7 +272,8 @@ def predict_with_auto_weather():
         return jsonify({
             'success': True,
             'prediction': result,
-            'weather_source': 'api'
+            'weather': weather_data,
+            'weather_source': 'open-meteo'
         }), 200
         
     except RuntimeError as e:
@@ -359,21 +364,34 @@ class WeatherAPIError(Exception):
 def fetch_weather_from_api(lat, lon):
     """
     Fetch weather data from weather API.
-    Uses OpenWeatherMap by default (requires OPENWEATHER_API_KEY env var).
+    Uses Open-Meteo as the primary provider (no API key required).
+    Falls back to OpenWeatherMap if OPENWEATHER_API_KEY env var is set.
+    
+    Open-Meteo provides accurate precipitation probability and forecast data
+    without requiring an API key, making it ideal for this application.
+    """
+    # Try Open-Meteo first (no API key required)
+    try:
+        weather_data = weather_service.fetch_weather(lat, lon)
+        return weather_data
+    except OpenMeteoWeatherServiceError as e:
+        # If Open-Meteo fails, try OpenWeatherMap as fallback if API key is available
+        api_key = os.environ.get('OPENWEATHER_API_KEY')
+        if api_key:
+            return fetch_weather_from_openweathermap(lat, lon, api_key)
+        else:
+            # No fallback available, raise the original error
+            raise WeatherAPIError(f"Open-Meteo error: {str(e)}")
+
+
+def fetch_weather_from_openweathermap(lat, lon, api_key):
+    """
+    Fetch weather data from OpenWeatherMap API (legacy fallback).
     
     Note: The OpenWeatherMap current weather endpoint (/data/2.5/weather) does not 
     include probability of precipitation (pop). This field is only available in the 
-    forecast endpoint. We default to 50% when missing - consider using the forecast 
-    endpoint for more accurate precipitation probability.
+    forecast endpoint. We default to 50% when missing.
     """
-    # Get API key from environment variable
-    api_key = os.environ.get('OPENWEATHER_API_KEY')
-    if not api_key:
-        raise WeatherAPIError(
-            "Weather API key not configured. "
-            "Set the OPENWEATHER_API_KEY environment variable."
-        )
-    
     url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
     
     try:

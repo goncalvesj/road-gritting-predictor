@@ -403,10 +403,10 @@ if __name__ == "__main__":
     system = GrittingPredictionSystem()
     
     # Load route database
-    system.load_route_database('routes_database.csv')
+    system.load_route_database('../data/routes_database.csv')
     
     # Train models
-    system.train('edinburgh_gritting_training_dataset.csv')
+    system.train('../data/edinburgh_gritting_training_dataset.csv')
     
     # Save models
     system.save_models()

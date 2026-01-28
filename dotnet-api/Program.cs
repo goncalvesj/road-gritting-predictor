@@ -6,6 +6,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services
 builder.Services.AddSingleton<GrittingPredictionService>();
+builder.Services.AddHttpClient<OpenMeteoWeatherService>()
+    .ConfigureHttpClient(client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(10);
+    });
 builder.Services.AddHttpClient<WeatherService>()
     .ConfigureHttpClient(client =>
     {
@@ -39,9 +44,9 @@ var logger = app.Services.GetRequiredService<ILogger<Program>>();
 try
 {
     // Load routes
-    var routesPath = Path.Combine("..", "routes_database.csv");
+    var routesPath = Path.Combine("..", "data", "routes_database.csv");
     if (!File.Exists(routesPath))
-        routesPath = "routes_database.csv"; // Fallback for local dev
+        routesPath = Path.Combine("data", "routes_database.csv"); // Fallback for local dev
     
     predictionService.LoadRoutes(routesPath);
 
