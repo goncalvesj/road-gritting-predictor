@@ -23,8 +23,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY python-api/gritting_prediction_system.py .
 COPY python-api/gritting_api.py .
 COPY python-api/open_meteo_weather_service.py .
-COPY data/edinburgh_gritting_training_dataset.csv .
-COPY data/routes_database.csv .
+
+# Copy data files to expected location (scripts reference ../data/)
+RUN mkdir -p ../data
+COPY data/edinburgh_gritting_training_dataset.csv ../data/
+COPY data/routes_database.csv ../data/
 
 # Create models directory
 RUN mkdir -p models
