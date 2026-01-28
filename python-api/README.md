@@ -37,9 +37,13 @@ docker-compose up -d
 | `gritting_api.py` | Flask REST API |
 | `open_meteo_weather_service.py` | Open-Meteo weather service (primary provider) |
 | `example_usage.py` | API usage examples |
+| `api.http` | HTTP test file for testing API endpoints |
 | `requirements.txt` | Python dependencies |
-| `edinburgh_gritting_training_dataset.csv` | Training data |
-| `routes_database.csv` | Route metadata |
+
+**Data files (located in `../data/`):**
+- `edinburgh_gritting_training_dataset.csv` - Training data
+- `routes_database.csv` - Route metadata
+- `DATASET_README.md` - Dataset documentation
 
 ## API Endpoints
 

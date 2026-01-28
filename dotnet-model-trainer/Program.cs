@@ -27,7 +27,7 @@ class Program
         Console.WriteLine("=================================================\n");
 
         // Parse command line arguments
-        string trainingDataPath = args.Length > 0 ? args[0] : "../edinburgh_gritting_training_dataset.csv";
+        string trainingDataPath = args.Length > 0 ? args[0] : "../data/edinburgh_gritting_training_dataset.csv";
         string outputDir = args.Length > 1 ? args[1] : "../dotnet-api/models";
 
         // Validate training data exists

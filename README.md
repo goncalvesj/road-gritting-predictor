@@ -106,16 +106,20 @@ road-gritting-ml-predictor/
 ├── README.md                              # This file
 ├── SOLUTION_REVIEW.md                     # Solution review documentation
 │
+├── data/                                  # Training data and routes
+│   ├── DATASET_README.md                 # Dataset documentation
+│   ├── edinburgh_gritting_training_dataset.csv  # Training data (500 samples)
+│   └── routes_database.csv               # Route metadata
+│
 ├── python-api/                            # Python ML prediction system
 │   ├── requirements.txt                   # Python dependencies
 │   ├── Dockerfile                         # Docker container definition
 │   ├── docker-compose.yml                 # Docker Compose configuration
 │   ├── gritting_prediction_system.py     # Main ML prediction system
 │   ├── gritting_api.py                   # REST API wrapper (Flask)
+│   ├── open_meteo_weather_service.py     # Open-Meteo weather service
 │   ├── example_usage.py                  # Usage examples
-│   ├── DATASET_README.md                 # Dataset documentation
-│   ├── edinburgh_gritting_training_dataset.csv  # Training data (500 samples)
-│   ├── routes_database.csv               # Route metadata
+│   ├── api.http                          # HTTP test file
 │   └── models/                           # Saved models (created after training)
 │
 ├── dotnet-api/                           # .NET Core API
@@ -242,14 +246,14 @@ Health check endpoint - returns API status and whether models are loaded
 ## Extending the System
 
 ### Add New Routes
-Edit `python-api/routes_database.csv`:
+Edit `data/routes_database.csv`:
 ```csv
 route_id,route_name,priority,road_type,route_length_km
 R008,New Road Name,1,A-road,15.5
 ```
 
 ### Add More Training Data
-Append to `python-api/edinburgh_gritting_training_dataset.csv` and retrain:
+Append to `data/edinburgh_gritting_training_dataset.csv` and retrain:
 ```bash
 cd python-api
 python gritting_prediction_system.py

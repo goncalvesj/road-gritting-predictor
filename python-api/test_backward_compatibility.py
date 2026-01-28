@@ -13,7 +13,7 @@ print("=" * 70)
 # Test 1: Verify the prediction system still works
 print("\n1. Testing GrittingPredictionSystem...")
 system = GrittingPredictionSystem()
-system.load_route_database('routes_database.csv')
+system.load_route_database('../data/routes_database.csv')
 system.load_models('models/gritting')
 
 weather_data = {

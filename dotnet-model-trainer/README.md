@@ -27,7 +27,7 @@ This tool trains machine learning models from the Edinburgh gritting training da
 dotnet run
 
 # Uses default paths:
-# - Training data: ../edinburgh_gritting_training_dataset.csv
+# - Training data: ../data/edinburgh_gritting_training_dataset.csv
 # - Output: ../dotnet-api/models/
 ```
 
@@ -37,7 +37,7 @@ dotnet run
 dotnet run <training_data_path> <output_dir>
 
 # Example:
-dotnet run ../edinburgh_gritting_training_dataset.csv ../dotnet-api/models
+dotnet run ../data/edinburgh_gritting_training_dataset.csv ../dotnet-api/models
 ```
 
 ## Output Files
