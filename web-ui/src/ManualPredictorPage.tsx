@@ -115,12 +115,27 @@ export function ManualPredictorPage({ onBack }: ManualPredictorPageProps) {
       </div>
 
       <div className="card-body">
+        {/* Page Description */}
+        <div className="page-description">
+          <p>
+            <strong>When to use:</strong> Use this mode when you want to test specific weather scenarios 
+            or don't have location data. You manually provide all 8 weather parameters that the ML model needs.
+          </p>
+        </div>
+
         {error && <div className="error">⚠️ {error}</div>}
 
-        <form onSubmit={handleSubmit}>
-          {/* Route Selection */}
+        {/* Step 1: Route Selection */}
+        <div className="input-section">
+          <div className="section-header">
+            <span className="section-step">Step 1</span>
+            <h4>Select Route to Analyze</h4>
+          </div>
+          <p className="section-description">
+            Each route has pre-defined characteristics that affect gritting requirements.
+          </p>
           <div className="form-group">
-            <label>Select Route</label>
+            <label>Route</label>
             <select
               value={selectedRoute}
               onChange={(e) => setSelectedRoute(e.target.value)}
@@ -133,132 +148,154 @@ export function ManualPredictorPage({ onBack }: ManualPredictorPageProps) {
               ))}
             </select>
           </div>
+        </div>
 
-          {/* Weather Conditions */}
-          <div className="weather-section">
-            <label className="section-label">🌤️ Weather Conditions</label>
-            <div className="weather-grid">
-              <div className="form-group">
-                <label>Temperature (°C)</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={temperature}
-                  onChange={(e) => setTemperature(parseFloat(e.target.value) || 0)}
-                  required
-                />
-              </div>
+        {/* Step 2: Weather Input */}
+        <div className="input-section">
+          <div className="section-header">
+            <span className="section-step">Step 2</span>
+            <h4>Enter Weather Conditions (ML Model Input)</h4>
+          </div>
+          <p className="section-description">
+            These 8 parameters form the weather input to the prediction model. 
+            <strong> Feels Like</strong> and <strong>Road Surface Temp</strong> are auto-calculated but can be overridden.
+          </p>
 
-              <div className="form-group">
-                <label>Forecast Min (°C)</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={forecastMin}
-                  onChange={(e) => setForecastMin(parseFloat(e.target.value) || 0)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Humidity (%)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={humidity}
-                  onChange={(e) => setHumidity(parseInt(e.target.value) || 0)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Wind Speed (km/h)</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  value={windSpeed}
-                  onChange={(e) => setWindSpeed(parseFloat(e.target.value) || 0)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Precipitation Type</label>
-                <select
-                  value={precipType}
-                  onChange={(e) => setPrecipType(e.target.value)}
-                  required
-                >
-                  <option value="none">☀️ None</option>
-                  <option value="rain">🌧️ Rain</option>
-                  <option value="snow">❄️ Snow</option>
-                  <option value="sleet">🌨️ Sleet</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Precipitation Chance (%)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={precipProb}
-                  onChange={(e) => setPrecipProb(parseInt(e.target.value) || 0)}
-                  required
-                />
+          <div className="weather-input-grid">
+            <div className="weather-input-group">
+              <label className="input-group-label">🌡️ Temperature</label>
+              <div className="weather-grid">
+                <div className="form-group">
+                  <label>Current (°C)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={temperature}
+                    onChange={(e) => setTemperature(parseFloat(e.target.value) || 0)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Forecast Min (°C)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={forecastMin}
+                    onChange={(e) => setForecastMin(parseFloat(e.target.value) || 0)}
+                    required
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Advanced Options Toggle */}
-            <div 
-              className="advanced-toggle"
-              onClick={() => setShowAdvanced(!showAdvanced)}
-            >
-              <span>{showAdvanced ? '▼' : '▶'}</span>
-              <span>Advanced Options (auto-calculated values)</span>
+            <div className="weather-input-group">
+              <label className="input-group-label">💧 Moisture & Wind</label>
+              <div className="weather-grid">
+                <div className="form-group">
+                  <label>Humidity (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={humidity}
+                    onChange={(e) => setHumidity(parseInt(e.target.value) || 0)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Wind Speed (km/h)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    value={windSpeed}
+                    onChange={(e) => setWindSpeed(parseFloat(e.target.value) || 0)}
+                    required
+                  />
+                </div>
+              </div>
             </div>
 
-            {showAdvanced && (
-              <div className="advanced-fields">
-                <div className="weather-grid">
-                  <div className="form-group">
-                    <label>Feels Like (°C)</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={manualFeelsLike ?? feelsLike}
-                      onChange={(e) => setManualFeelsLike(e.target.value === '' ? null : parseFloat(e.target.value))}
-                    />
-                    <div className="auto-calc-note">
-                      Auto: {calculateFeelsLike(temperature, windSpeed).toFixed(1)}°C
-                    </div>
+            <div className="weather-input-group">
+              <label className="input-group-label">🌨️ Precipitation</label>
+              <div className="weather-grid">
+                <div className="form-group">
+                  <label>Type</label>
+                  <select
+                    value={precipType}
+                    onChange={(e) => setPrecipType(e.target.value)}
+                    required
+                  >
+                    <option value="none">☀️ None</option>
+                    <option value="rain">🌧️ Rain</option>
+                    <option value="snow">❄️ Snow</option>
+                    <option value="sleet">🌨️ Sleet</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Probability (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={precipProb}
+                    onChange={(e) => setPrecipProb(parseInt(e.target.value) || 0)}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Advanced Options Toggle */}
+          <div 
+            className="advanced-toggle"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+          >
+            <span>{showAdvanced ? '▼' : '▶'}</span>
+            <span>Advanced: Override auto-calculated values</span>
+          </div>
+
+          {showAdvanced && (
+            <div className="advanced-fields">
+              <div className="weather-grid">
+                <div className="form-group">
+                  <label>Feels Like (°C)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={manualFeelsLike ?? feelsLike}
+                    onChange={(e) => setManualFeelsLike(e.target.value === '' ? null : parseFloat(e.target.value))}
+                  />
+                  <div className="auto-calc-note">
+                    Auto-calculated: {calculateFeelsLike(temperature, windSpeed).toFixed(1)}°C (wind chill formula)
                   </div>
+                </div>
 
-                  <div className="form-group">
-                    <label>Road Surface Temp (°C)</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={manualRoadTemp ?? roadSurfaceTemp}
-                      onChange={(e) => setManualRoadTemp(e.target.value === '' ? null : parseFloat(e.target.value))}
-                    />
-                    <div className="auto-calc-note">
-                      Auto: {calculateRoadSurfaceTemp(temperature).toFixed(1)}°C
-                    </div>
+                <div className="form-group">
+                  <label>Road Surface Temp (°C)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={manualRoadTemp ?? roadSurfaceTemp}
+                    onChange={(e) => setManualRoadTemp(e.target.value === '' ? null : parseFloat(e.target.value))}
+                  />
+                  <div className="auto-calc-note">
+                    Auto-calculated: {calculateRoadSurfaceTemp(temperature).toFixed(1)}°C (typically 1.5°C below air)
                   </div>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
+        </div>
 
+        <form onSubmit={handleSubmit}>
           <button type="submit" disabled={loading || !selectedRoute}>
-            {loading ? '⏳ Analyzing...' : '🔮 Get Prediction'}
+            {loading ? '⏳ Running ML Model...' : '🔮 Get Gritting Prediction'}
           </button>
         </form>
 
-        {/* Results */}
+        {/* Results - Model Output */}
         {prediction && prediction.success && (
           <div className="result-card" style={{ marginTop: '1.5rem' }}>
             <div className={`result-header gritting-${prediction.prediction.gritting_decision}`}>
@@ -271,6 +308,7 @@ export function ManualPredictorPage({ onBack }: ManualPredictorPageProps) {
                   : 'No Gritting Needed'}
               </h2>
               <p>{prediction.prediction.route_name} • {(prediction.prediction.decision_confidence * 100).toFixed(0)}% confidence</p>
+              <span className="model-output-tag">📤 ML Model Output</span>
             </div>
             
             <div className="result-body">
