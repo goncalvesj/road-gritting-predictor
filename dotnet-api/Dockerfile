@@ -36,8 +36,8 @@ WORKDIR /app
 
 # Copy trainer and data files
 COPY --from=build /app/trainer .
-COPY python-api/edinburgh_gritting_training_dataset.csv .
-COPY python-api/routes_database.csv .
+COPY data/edinburgh_gritting_training_dataset.csv .
+COPY data/routes_database.csv .
 
 # Train models
 RUN mkdir -p /models && \
@@ -51,7 +51,7 @@ WORKDIR /app
 COPY --from=publish /app/publish .
 
 # Copy data files
-COPY python-api/routes_database.csv .
+COPY data/routes_database.csv .
 
 # Copy pre-trained models from trainer stage
 COPY --from=trainer /models ./models

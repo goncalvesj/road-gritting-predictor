@@ -42,7 +42,7 @@ jobs:
     needs: push-gritting-api-to-acr
     uses: yxtc4/devops/.github/workflows/reusable-deploy-to-aca.yml@main
     name: Deploy Gritting API to ACA
-    if: ${{ vars.GRITTING_API_RESOURCE_GROUP != '' && vars.GRITTING_API_ACA_NAME != '' }}
+    if: ${{ vars.GRITTING_API_RESOURCE_GROUP != '' && vars.GRITTING_API_ACA_NAME != '' && vars.GRITTING_API_BACKEND == 'dotnet' }}
     with:
       resource-group: ${{ vars.GRITTING_API_RESOURCE_GROUP }}
       aca-name: ${{ vars.GRITTING_API_ACA_NAME }}

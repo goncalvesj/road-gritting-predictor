@@ -14,17 +14,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
-COPY requirements.txt .
+COPY python-api/requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY gritting_prediction_system.py .
-COPY gritting_api.py .
-COPY open_meteo_weather_service.py .
-COPY edinburgh_gritting_training_dataset.csv .
-COPY routes_database.csv .
+COPY python-api/gritting_prediction_system.py .
+COPY python-api/gritting_api.py .
+COPY python-api/open_meteo_weather_service.py .
+COPY data/edinburgh_gritting_training_dataset.csv .
+COPY data/routes_database.csv .
 
 # Create models directory
 RUN mkdir -p models
