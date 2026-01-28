@@ -26,7 +26,7 @@ def get_system():
     
     if system is None:
         system = GrittingPredictionSystem()
-        system.load_route_database('../data/routes_database.csv')
+        system.load_route_database('../data/gritting_data.db')
     
     if not _models_loaded:
         try:

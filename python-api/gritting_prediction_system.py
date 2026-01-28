@@ -5,6 +5,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 import pickle
 import json
+import sqlite3
 from datetime import datetime
 
 class GrittingPredictionSystem:
@@ -20,9 +21,11 @@ class GrittingPredictionSystem:
         self.label_encoders = {}
         self.feature_cols = None
         
-    def load_route_database(self, routes_csv_path):
-        """Load route metadata database"""
-        self.routes_db = pd.read_csv(routes_csv_path)
+    def load_route_database(self, db_path):
+        """Load route metadata database from SQLite"""
+        conn = sqlite3.connect(db_path)
+        self.routes_db = pd.read_sql_query("SELECT * FROM routes", conn)
+        conn.close()
         # Create route lookup dictionary
         self.route_lookup = self.routes_db.set_index('route_id').to_dict('index')
         
@@ -121,12 +124,14 @@ class GrittingPredictionSystem:
         else:
             return 'low'
     
-    def train(self, training_data_path):
+    def train(self, db_path):
         """
         Train both decision and amount prediction models
         """
         print("Loading training data...")
-        df = pd.read_csv(training_data_path)
+        conn = sqlite3.connect(db_path)
+        df = pd.read_sql_query("SELECT * FROM training_data", conn)
+        conn.close()
         
         print("Engineering features...")
         # Feature engineering
@@ -402,11 +407,11 @@ if __name__ == "__main__":
     # Initialize system
     system = GrittingPredictionSystem()
     
-    # Load route database
-    system.load_route_database('../data/routes_database.csv')
+    # Load route database from SQLite
+    system.load_route_database('../data/gritting_data.db')
     
-    # Train models
-    system.train('../data/edinburgh_gritting_training_dataset.csv')
+    # Train models using SQLite database
+    system.train('../data/gritting_data.db')
     
     # Save models
     system.save_models()
