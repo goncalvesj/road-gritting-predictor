@@ -22,10 +22,17 @@ class GrittingPredictionSystem:
         self.feature_cols = None
         
     def load_route_database(self, db_path):
-        """Load route metadata database from SQLite"""
+        """
+        Load route metadata database from SQLite.
+        
+        Args:
+            db_path: Path to the SQLite database file containing the routes table.
+        """
         conn = sqlite3.connect(db_path)
-        self.routes_db = pd.read_sql_query("SELECT * FROM routes", conn)
-        conn.close()
+        try:
+            self.routes_db = pd.read_sql_query("SELECT * FROM routes", conn)
+        finally:
+            conn.close()
         # Create route lookup dictionary
         self.route_lookup = self.routes_db.set_index('route_id').to_dict('index')
         
@@ -126,12 +133,17 @@ class GrittingPredictionSystem:
     
     def train(self, db_path):
         """
-        Train both decision and amount prediction models
+        Train both decision and amount prediction models.
+        
+        Args:
+            db_path: Path to the SQLite database file containing the training_data table.
         """
         print("Loading training data...")
         conn = sqlite3.connect(db_path)
-        df = pd.read_sql_query("SELECT * FROM training_data", conn)
-        conn.close()
+        try:
+            df = pd.read_sql_query("SELECT * FROM training_data", conn)
+        finally:
+            conn.close()
         
         print("Engineering features...")
         # Feature engineering

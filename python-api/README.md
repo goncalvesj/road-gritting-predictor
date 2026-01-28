@@ -10,6 +10,9 @@ Flask-based REST API for road gritting predictions using machine learning.
 # Install dependencies
 pip install -r requirements.txt
 
+# Generate SQLite database from CSV files (first time only)
+cd ../data && python csv_to_sqlite.py && cd ../python-api
+
 # Train the ML models
 python gritting_prediction_system.py
 
@@ -41,9 +44,16 @@ docker-compose up -d
 | `requirements.txt` | Python dependencies |
 
 **Data files (located in `../data/`):**
-- `edinburgh_gritting_training_dataset.csv` - Training data
-- `routes_database.csv` - Route metadata
-- `DATASET_README.md` - Dataset documentation
+- `edinburgh_gritting_training_dataset.csv` - Training data (source)
+- `routes_database.csv` - Route metadata (source)
+- `gritting_data.db` - SQLite database (generated)
+- `csv_to_sqlite.py` - Script to generate SQLite database from CSV files
+
+To regenerate the SQLite database from CSV files:
+```bash
+cd ../data
+python csv_to_sqlite.py
+```
 
 ## API Endpoints
 
