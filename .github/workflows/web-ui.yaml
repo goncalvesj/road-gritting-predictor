@@ -45,6 +45,8 @@ jobs:
       image-name: gritting-web-ui
       dockerfile-location: web-ui/Dockerfile
       build-context: web-ui
+      build-args: |
+        VITE_API_URL=https://road-gritting-predictor.azjprg.site/api
     secrets: inherit
     permissions:
       contents: read
