@@ -2,9 +2,9 @@
 
 ## Executive Summary
 
-This review evaluates the road gritting ML prediction system for Edinburgh winter road maintenance. The solution demonstrates a well-structured approach to predicting gritting decisions using machine learning, but has several areas that need improvement before production deployment.
+This review evaluates the road gritting ML prediction system for Edinburgh winter road maintenance. The solution demonstrates a well-structured approach to predicting gritting decisions using machine learning. Since the initial review, significant improvements have been made including expanded training data, Docker support, and CI/CD pipelines.
 
-**Overall Assessment:** ⭐⭐⭐ (3/5) - Good Proof of Concept, Needs Production Hardening
+**Overall Assessment:** ⭐⭐⭐⭐ (4/5) - Strong Solution, Some Production Hardening Needed
 
 ---
 
@@ -48,7 +48,7 @@ Top Features (by importance):
 ## 2. Critical Bugs Found
 
 ### 🔴 HIGH: LabelEncoder crashes on unseen precipitation types
-**File:** `gritting_prediction_system.py:246-248`
+**File:** `gritting_predictor.py` - `prepare_features` method
 
 ```python
 # Current code - will crash with unseen precipitation types
@@ -83,13 +83,12 @@ features_encoded['precipitation_type_encoded'] = self.label_encoders['precipitat
 ---
 
 ### 🔴 HIGH: API fails at startup if models don't exist
-**File:** `gritting_api.py:8-10`
+**File:** `gritting_api.py` - model loading at startup
 
 ```python
 # Current code - runs at import time
-system = GrittingPredictionSystem()
-system.load_route_database('routes_database.csv')
-system.load_models('models/gritting')  # Crashes if files don't exist
+# Models are loaded when the application starts
+# Crashes if files don't exist
 ```
 
 **Problem:** Fresh deployments or missing model files crash the entire Flask app.
@@ -99,7 +98,7 @@ system.load_models('models/gritting')  # Crashes if files don't exist
 ---
 
 ### 🟡 MEDIUM: No input validation in API endpoints
-**File:** `gritting_api.py:32-49`
+**File:** `gritting_api.py`
 
 Missing validation for:
 - Required fields (`route_id`, `weather`)
@@ -110,7 +109,7 @@ Missing validation for:
 ---
 
 ### 🟡 MEDIUM: Spread rate calculation formula review
-**File:** `gritting_prediction_system.py:272`
+**File:** `gritting_predictor.py`
 
 ```python
 spread_rate = int(salt_amount / (route_length * 1000) * 1000)
@@ -127,7 +126,7 @@ The issue is twofold:
 ---
 
 ### 🟡 MEDIUM: External weather API has no error handling
-**File:** `gritting_api.py:104-128`
+**File:** `gritting_api.py` - `fetch_weather_from_api()` function
 
 ```python
 # No try-except around network call
@@ -154,7 +153,7 @@ weather_data = {
 
 | Category | Issue |
 |----------|-------|
-| **Dependencies** | No `requirements.txt` file - deployment will fail |
+| **Dependencies** | ✅ Resolved - `requirements.txt` file now exists |
 | **Type hints** | No Python type annotations (PEP 484) |
 | **Logging** | Uses `print()` instead of `logging` module |
 | **Constants** | Magic numbers scattered (e.g., 0.5 threshold, 60% precip) |
@@ -175,14 +174,14 @@ weather_data = {
 
 ## 5. Missing Components
 
-| Component | Priority | Notes |
-|-----------|----------|-------|
-| `requirements.txt` | High | Required for deployment |
-| `.gitignore` | High | Should exclude `models/`, `__pycache__/` |
-| Unit tests | High | No test coverage |
-| CI/CD pipeline | Medium | No GitHub Actions workflow |
-| Docker support | Medium | Would simplify deployment |
-| Model versioning | Medium | No MLflow or similar |
+| Component | Priority | Status | Notes |
+|-----------|----------|--------|-------|
+| `requirements.txt` | High | ✅ Resolved | Python dependencies file exists |
+| `.gitignore` | High | ✅ Resolved | Properly excludes `models/`, `__pycache__/`, etc. |
+| Unit tests | High | ✅ Partial | Test files exist in `tests/` directory |
+| CI/CD pipeline | Medium | ✅ Resolved | GitHub Actions workflows configured |
+| Docker support | Medium | ✅ Resolved | Docker Compose files for both Python and .NET APIs |
+| Model versioning | Medium | Not Started | No MLflow or similar |
 
 ---
 
@@ -190,14 +189,7 @@ weather_data = {
 
 ### Immediate (Before Production)
 
-1. **Create `requirements.txt`:**
-   ```
-   pandas>=1.5.0
-   numpy>=1.23.0
-   scikit-learn>=1.1.0
-   flask>=2.2.0
-   requests>=2.28.0
-   ```
+1. ~~**Create `requirements.txt`**~~ ✅ Completed
 
 2. **Fix LabelEncoder issue** - Add unknown value handling
 
@@ -209,15 +201,15 @@ weather_data = {
 
 ### Short-term (Next Sprint)
 
-1. **Expand training dataset** - Target 500+ samples minimum
-2. **Add unit tests** - Aim for 80% coverage
+1. ~~**Expand training dataset**~~ ✅ Completed - Dataset now has 500 samples
+2. **Add unit tests** - Aim for 80% coverage (basic tests exist in `tests/` directory)
 3. **Implement k-fold cross-validation**
 4. **Add logging framework**
-5. **Create Docker deployment**
+5. ~~**Create Docker deployment**~~ ✅ Completed - Docker Compose files exist for both APIs
 
 ### Long-term (Roadmap)
 
-1. **Real weather API integration** with proper error handling
+1. ~~**Real weather API integration**~~ ✅ Completed - Open-Meteo integration with OpenWeatherMap fallback
 2. **Model retraining pipeline** with MLflow
 3. **A/B testing framework** for model comparison
 4. **Monitoring and alerting** for model drift
@@ -263,15 +255,23 @@ The Road Gritting ML Predictor is a **solid proof-of-concept** that demonstrates
 - UK NWSRG winter maintenance standards
 - REST API design patterns
 
-However, it requires **significant hardening** before production deployment, particularly around:
-- Error handling and input validation
-- Model robustness with limited training data
-- Security best practices
-- Missing infrastructure files
+**Progress since initial review:**
+- ✅ Training dataset expanded to 500 samples (was 72)
+- ✅ Class balance improved (54%/46% vs 82%/18%)
+- ✅ Requirements.txt created
+- ✅ Docker support added
+- ✅ CI/CD pipelines configured
+- ✅ Open-Meteo weather integration added
 
-**Recommendation:** Address critical bugs and add `requirements.txt` before any deployment. Plan for expanded training data and testing infrastructure in the next development cycle.
+However, it still requires **some hardening** before production deployment, particularly around:
+- Error handling and input validation
+- Security best practices (API key management)
+- LabelEncoder handling for unknown precipitation types
+
+**Recommendation:** Address the remaining critical bugs (LabelEncoder issue, input validation) before production deployment. The infrastructure is now largely in place.
 
 ---
 
-*Review conducted: 2026-01-23*
+*Initial review: 2026-01-23*
+*Last updated: 2026-01-29*
 *Reviewer: GitHub Copilot Code Review*

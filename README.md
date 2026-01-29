@@ -20,8 +20,8 @@ The easiest way to run the application is using Docker:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yxtc4/road-gritting-ml-predictor.git
-cd road-gritting-ml-predictor/python-api
+git clone https://github.com/goncalvesj/road-gritting-predictor.git
+cd road-gritting-predictor/python-api
 
 # Run with Docker Compose
 docker-compose up -d
@@ -45,15 +45,19 @@ docker-compose --profile dev up gritting-api-dev
 #### 1. Installation
 
 ```bash
-git clone https://github.com/yxtc4/road-gritting-ml-predictor.git
-cd road-gritting-ml-predictor/python-api
+git clone https://github.com/goncalvesj/road-gritting-predictor.git
+cd road-gritting-predictor/python-api
 pip install -r requirements.txt
 ```
 
 #### 2. Train the Models
 
 ```bash
-python gritting_prediction_system.py
+# Generate SQLite database from CSV files (first time only)
+cd ../data && python csv_to_sqlite.py && cd ../python-api
+
+# Train the models
+python model_trainer.py
 ```
 
 This will:
@@ -73,7 +77,7 @@ The API will be available at `http://localhost:5000`
 #### 4. Make Predictions
 
 ```bash
-python example_usage.py
+python ../tests/example_usage.py
 ```
 
 ### Making API Requests
@@ -101,26 +105,30 @@ curl -X POST http://localhost:5000/predict \
 ## Project Structure
 
 ```
-road-gritting-ml-predictor/
+road-gritting-predictor/
 │
 ├── README.md                              # This file
-├── SOLUTION_REVIEW.md                     # Solution review documentation
 │
 ├── data/                                  # Training data and routes
-│   ├── DATASET_README.md                 # Dataset documentation
 │   ├── edinburgh_gritting_training_dataset.csv  # Training data (500 samples)
-│   └── routes_database.csv               # Route metadata
+│   ├── routes_database.csv               # Route metadata
+│   ├── gritting_data.db                  # SQLite database (generated)
+│   └── csv_to_sqlite.py                  # Script to generate SQLite database
+│
+├── docs/                                  # Documentation
+│   ├── DATASET_README.md                 # Dataset documentation
+│   └── SOLUTION_REVIEW.md                # Solution review documentation
 │
 ├── python-api/                            # Python ML prediction system
 │   ├── requirements.txt                   # Python dependencies
 │   ├── Dockerfile                         # Docker container definition
 │   ├── docker-compose.yml                 # Docker Compose configuration
-│   ├── gritting_prediction_system.py     # Main ML prediction system
+│   ├── model_trainer.py                  # ML model training
+│   ├── gritting_predictor.py             # Inference-only prediction service
 │   ├── gritting_api.py                   # REST API wrapper (Flask)
+│   ├── gritting_data_service.py          # Route data service (SQLite/CSV)
 │   ├── open_meteo_weather_service.py     # Open-Meteo weather service
-│   ├── example_usage.py                  # Usage examples
-│   ├── api.http                          # HTTP test file
-│   └── models/                           # Saved models (created after training)
+│   └── api.http                          # HTTP test file
 │
 ├── dotnet-api/                           # .NET Core API
 │   ├── Program.cs                        # API entry point
@@ -133,18 +141,25 @@ road-gritting-ml-predictor/
 │
 ├── dotnet-model-trainer/                 # .NET ML model trainer
 │   ├── Program.cs                        # Trainer entry point
-│   └── ModelTrainer.csproj              # Project file
+│   ├── ModelTrainer.csproj              # Project file
+│   └── README.md                        # Trainer documentation
 │
 ├── web-ui/                               # Web UI (React/TypeScript)
 │   ├── src/                             # Source code
 │   └── package.json                     # Dependencies
 │
-├── models/                               # Shared models directory
+├── tests/                                # Test files
+│   ├── example_usage.py                 # Usage examples
+│   ├── test_backward_compatibility.py   # Backward compatibility tests
+│   ├── test_open_meteo.py               # Open-Meteo integration tests
+│   └── test_open_meteo_mock.py          # Open-Meteo mock tests
 │
 └── .github/workflows/                    # CI/CD workflows
-    ├── gritting-predictor.yaml          # Python API workflow
+    ├── gritting-api-python.yaml          # Python API workflow
     ├── gritting-api-dotnet.yaml         # .NET API workflow
-    └── model-deployment.yaml            # Model deployment workflow
+    ├── model-deployment.yaml            # Model deployment workflow
+    ├── web-ui.yaml                      # Web UI workflow
+    └── deploy-web-ui-pages.yaml         # GitHub Pages deployment
 ```
 
 ## How It Works
@@ -194,7 +209,7 @@ The training dataset contains **500 samples** from synthetic Edinburgh winter gr
 - **Balanced classes**: 54% gritted vs 46% not_gritted
 - Based on **UK NWSRG standards** for spread rates (20-40 g/m²)
 
-See [python-api/DATASET_README.md](python-api/DATASET_README.md) for full documentation.
+See [docs/DATASET_README.md](docs/DATASET_README.md) for full documentation.
 
 ## API Endpoints
 
@@ -256,7 +271,7 @@ R008,New Road Name,1,A-road,15.5
 Append to `data/edinburgh_gritting_training_dataset.csv` and retrain:
 ```bash
 cd python-api
-python gritting_prediction_system.py
+python model_trainer.py
 ```
 
 ### Weather Provider Integration
@@ -265,6 +280,7 @@ The system uses **Open-Meteo** as the default weather provider (no API key requi
 
 **Python API:**
 - Main service: `python-api/open_meteo_weather_service.py`
+- Prediction: `python-api/gritting_predictor.py`
 - Integration: `python-api/gritting_api.py` → `fetch_weather_from_api()` function
 - Fallback: OpenWeatherMap (if `OPENWEATHER_API_KEY` is set)
 
