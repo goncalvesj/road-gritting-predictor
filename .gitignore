@@ -91,3 +91,8 @@ dist/
 dist-ssr/
 *.local
 .vs/**
+
+# Azure Functions / Logic Apps
+local.settings.json
+bin/
+obj/
