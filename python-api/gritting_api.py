@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from gritting_prediction_system import GrittingPredictionSystem
+from gritting_predictor import GrittingPredictor
+from gritting_data_service import create_route_service
 from open_meteo_weather_service import OpenMeteoWeatherService, OpenMeteoWeatherServiceError
 import requests
 import os
@@ -9,36 +10,41 @@ import math
 app = Flask(__name__)
 CORS(app)
 
+# Initialize route service (SQLite by default, CSV fallback)
+route_service = None
+
 # Initialize the prediction system (lazy-load models)
-system = None
+predictor = None
 _models_loaded = False
 
 # Initialize weather service
 weather_service = OpenMeteoWeatherService()
 
 
-def get_system():
+def get_predictor():
     """
-    Lazy-load the prediction system and models.
-    Returns the system if models are loaded, raises error otherwise.
+    Lazy-load the predictor and models.
+    Returns the predictor if models are loaded, raises error otherwise.
     """
-    global system, _models_loaded
+    global predictor, _models_loaded, route_service
     
-    if system is None:
-        system = GrittingPredictionSystem()
-        system.load_route_database('../data/routes_database.csv')
+    if route_service is None:
+        route_service = create_route_service()
+    
+    if predictor is None:
+        predictor = GrittingPredictor(route_lookup=route_service.route_lookup)
     
     if not _models_loaded:
         try:
-            system.load_models('models/gritting')
+            predictor.load_models('models/gritting')
             _models_loaded = True
         except FileNotFoundError as e:
             raise RuntimeError(
                 "Models not found. Please train the models first by running: "
-                "python gritting_prediction_system.py"
+                "python model_trainer.py"
             ) from e
     
-    return system
+    return predictor
 
 
 def validate_weather_data(weather):
@@ -161,18 +167,18 @@ def predict_gritting():
                 'error': error_msg
             }), 400
         
-        # Get system (with lazy model loading)
-        pred_system = get_system()
+        # Get predictor (with lazy model loading)
+        pred = get_predictor()
         
         # Validate route exists
-        if route_id not in pred_system.route_lookup:
+        if route_id not in pred.route_lookup:
             return jsonify({
                 'success': False,
                 'error': f"Route '{route_id}' not found. Use GET /routes to see available routes."
             }), 404
         
         # Make prediction
-        result = pred_system.predict(route_id, weather_data)
+        result = pred.predict(route_id, weather_data)
         
         return jsonify({
             'success': True,
@@ -253,11 +259,11 @@ def predict_with_auto_weather():
                 'error': 'longitude must be between -180 and 180'
             }), 400
         
-        # Get system (with lazy model loading)
-        pred_system = get_system()
+        # Get predictor (with lazy model loading)
+        pred = get_predictor()
         
         # Validate route exists
-        if route_id not in pred_system.route_lookup:
+        if route_id not in pred.route_lookup:
             return jsonify({
                 'success': False,
                 'error': f"Route '{route_id}' not found. Use GET /routes to see available routes."
@@ -267,7 +273,7 @@ def predict_with_auto_weather():
         weather_data = fetch_weather_from_api(lat, lon)
         
         # Make prediction
-        result = pred_system.predict(route_id, weather_data)
+        result = pred.predict(route_id, weather_data)
         
         return jsonify({
             'success': True,
@@ -296,8 +302,11 @@ def predict_with_auto_weather():
 @app.route('/routes', methods=['GET'])
 def get_routes():
     """Get all available routes"""
+    global route_service
     try:
-        pred_system = get_system()
+        if route_service is None:
+            route_service = create_route_service()
+        
         routes = [
             {
                 'route_id': rid,
@@ -305,14 +314,9 @@ def get_routes():
                 'priority': info['priority'],
                 'length_km': info['route_length_km']
             }
-            for rid, info in pred_system.route_lookup.items()
+            for rid, info in route_service.route_lookup.items()
         ]
         return jsonify({'routes': routes}), 200
-    except RuntimeError as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 503
     except Exception as e:
         return jsonify({
             'success': False,
@@ -325,8 +329,8 @@ def health_check():
     """Health check endpoint"""
     global _models_loaded
     try:
-        # Attempt to initialize the system and load models if not already done
-        get_system()
+        # Attempt to initialize predictor and load models if not already done
+        get_predictor()
 
         # If models are loaded, the service is healthy
         if _models_loaded:

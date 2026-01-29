@@ -20,7 +20,9 @@ COPY python-api/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY python-api/gritting_prediction_system.py .
+COPY python-api/gritting_predictor.py .
+COPY python-api/gritting_data_service.py .
+COPY python-api/model_trainer.py .
 COPY python-api/gritting_api.py .
 COPY python-api/open_meteo_weather_service.py .
 
@@ -28,6 +30,7 @@ COPY python-api/open_meteo_weather_service.py .
 RUN mkdir -p ../data
 COPY data/edinburgh_gritting_training_dataset.csv ../data/
 COPY data/routes_database.csv ../data/
+COPY data/gritting_data.db ../data/
 
 # Create models directory
 RUN mkdir -p models
@@ -35,7 +38,7 @@ RUN mkdir -p models
 # Train the models during build
 # Note: This increases image size but ensures models are ready at startup.
 # If training fails, the build will fail - allowing early detection of issues.
-RUN python gritting_prediction_system.py
+RUN python model_trainer.py
 
 # Expose the API port
 EXPOSE 8080

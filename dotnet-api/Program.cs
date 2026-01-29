@@ -4,6 +4,39 @@ using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Determine which route service to use (SQLite by default, CSV as fallback)
+var sqliteDbPath = Path.Combine("..", "data", "gritting_data.db");
+if (!File.Exists(sqliteDbPath))
+    sqliteDbPath = Path.Combine("data", "gritting_data.db");
+
+var useSqlite = File.Exists(sqliteDbPath);
+
+// Add route service (SQLite default, CSV fallback)
+if (useSqlite)
+{
+    builder.Services.AddSingleton<IRouteService>(sp =>
+    {
+        var logger = sp.GetRequiredService<ILogger<SqliteRouteService>>();
+        var service = new SqliteRouteService(logger);
+        service.LoadRoutes(sqliteDbPath);
+        return service;
+    });
+}
+else
+{
+    var csvPath = Path.Combine("..", "data", "routes_database.csv");
+    if (!File.Exists(csvPath))
+        csvPath = Path.Combine("data", "routes_database.csv");
+    
+    builder.Services.AddSingleton<IRouteService>(sp =>
+    {
+        var logger = sp.GetRequiredService<ILogger<CsvRouteService>>();
+        var service = new CsvRouteService(logger);
+        service.LoadRoutes(csvPath);
+        return service;
+    });
+}
+
 // Add services
 builder.Services.AddSingleton<GrittingPredictionService>();
 builder.Services.AddHttpClient<OpenMeteoWeatherService>()
@@ -41,15 +74,11 @@ app.UseCors();
 var predictionService = app.Services.GetRequiredService<GrittingPredictionService>();
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
 
+// Log which data source is being used
+logger.LogInformation("Using {DataSource} for route data", useSqlite ? "SQLite" : "CSV");
+
 try
 {
-    // Load routes
-    var routesPath = Path.Combine("..", "data", "routes_database.csv");
-    if (!File.Exists(routesPath))
-        routesPath = Path.Combine("data", "routes_database.csv"); // Fallback for local dev
-    
-    predictionService.LoadRoutes(routesPath);
-
     // Load pre-trained models
     // Models must be trained separately using the ModelTrainer tool
     var modelsDir = "models";

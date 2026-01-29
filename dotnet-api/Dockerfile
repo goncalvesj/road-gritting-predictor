@@ -50,8 +50,10 @@ WORKDIR /app
 # Copy published app
 COPY --from=publish /app/publish .
 
-# Copy data files
-COPY data/routes_database.csv .
+# Copy data files to data/ subdirectory (API checks both ../data/ and data/)
+RUN mkdir -p data
+COPY data/routes_database.csv ./data/
+COPY data/gritting_data.db ./data/
 
 # Copy pre-trained models from trainer stage
 COPY --from=trainer /models ./models
