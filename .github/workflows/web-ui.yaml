@@ -46,7 +46,7 @@ jobs:
       dockerfile-location: Dockerfile
       build-context: web-ui
       build-args: |
-        VITE_API_URL=https://road-gritting-predictor.azjprg.site/api
+        VITE_API_URL=${{ vars.GRITTING_API_URL }}
     secrets: inherit
     permissions:
       contents: read

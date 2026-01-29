@@ -1,8 +1,5 @@
 using Microsoft.ML;
 using GrittingApi.Models;
-using CsvHelper;
-using CsvHelper.Configuration;
-using System.Globalization;
 
 namespace GrittingApi.Services;
 
@@ -18,9 +15,9 @@ public class GrittingPredictionService
     private ITransformer? _amountModel;
     private PredictionEngine<GrittingFeatures, DecisionPrediction>? _decisionEngine;
     private PredictionEngine<GrittingFeatures, AmountPrediction>? _amountEngine;
-    private Dictionary<string, RouteInfo> _routeLookup = new();
     private Dictionary<string, float> _precipTypeEncoding = new();
     private readonly ILogger<GrittingPredictionService> _logger;
+    private readonly IRouteService _routeService;
 
     // Constants for duration and spread rate calculations
     // Average speed of gritter truck in km per 10 minutes
@@ -32,42 +29,30 @@ public class GrittingPredictionService
 
     public bool ModelsLoaded => _decisionModel != null && _amountModel != null;
 
-    public GrittingPredictionService(ILogger<GrittingPredictionService> logger)
+    public GrittingPredictionService(ILogger<GrittingPredictionService> logger, IRouteService routeService)
     {
         _mlContext = new MLContext(seed: 42);
         _logger = logger;
-    }
-
-    /// <summary>
-    /// Load routes from CSV file
-    /// </summary>
-    public void LoadRoutes(string routesPath)
-    {
-        using var reader = new StreamReader(routesPath);
-        using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture));
-        
-        var routes = csv.GetRecords<RouteInfo>().ToList();
-        _routeLookup = routes.ToDictionary(r => r.route_id);
-        
-        _logger.LogInformation("Loaded {Count} routes from database", _routeLookup.Count);
+        _routeService = routeService;
     }
 
     /// <summary>
     /// Get all routes
     /// </summary>
-    public List<RouteInfo> GetRoutes() => _routeLookup.Values.ToList();
+    public List<RouteInfo> GetRoutes() => _routeService.GetRoutes();
 
     /// <summary>
     /// Check if route exists
     /// </summary>
-    public bool RouteExists(string routeId) => _routeLookup.ContainsKey(routeId);
+    public bool RouteExists(string routeId) => _routeService.RouteExists(routeId);
 
     /// <summary>
     /// Create features from route and weather data
     /// </summary>
     public GrittingFeatures CreateFeatures(string routeId, WeatherData weather)
     {
-        if (!_routeLookup.TryGetValue(routeId, out var route))
+        var route = _routeService.GetRoute(routeId);
+        if (route == null)
             throw new ArgumentException($"Route {routeId} not found");
 
         var precipType = SanitizePrecipitationType(weather.precipitation_type);
@@ -160,7 +145,8 @@ public class GrittingPredictionService
         if (_decisionEngine == null || _amountEngine == null)
             throw new InvalidOperationException("Models not loaded");
 
-        if (!_routeLookup.TryGetValue(routeId, out var route))
+        var route = _routeService.GetRoute(routeId);
+        if (route == null)
             throw new ArgumentException($"Route {routeId} not found");
 
         var sanitizedWeather = new WeatherData

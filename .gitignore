@@ -76,7 +76,7 @@ models/
 *.log
 
 # SQLite database (generated from CSV)
-*.db
+# *.db
 
 # Node.js / npm
 node_modules/

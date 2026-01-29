@@ -14,13 +14,10 @@ pip install -r requirements.txt
 cd ../data && python csv_to_sqlite.py && cd ../python-api
 
 # Train the ML models
-python gritting_prediction_system.py
+python model_trainer.py
 
 # Run the API server
 python gritting_api.py
-
-# Test with example usage
-python example_usage.py
 ```
 
 ### Docker
@@ -29,17 +26,18 @@ python example_usage.py
 # Build and run
 docker-compose up -d
 
-# API available at http://localhost:5000
+# API available at http://localhost:8080
 ```
 
 ## Files
 
 | File | Description |
 |------|-------------|
-| `gritting_prediction_system.py` | ML model training and prediction logic |
 | `gritting_api.py` | Flask REST API |
+| `gritting_predictor.py` | Inference-only prediction service |
+| `model_trainer.py` | ML model training (run separately) |
+| `gritting_data_service.py` | Route data service (SQLite/CSV) |
 | `open_meteo_weather_service.py` | Open-Meteo weather service (primary provider) |
-| `example_usage.py` | API usage examples |
 | `api.http` | HTTP test file for testing API endpoints |
 | `requirements.txt` | Python dependencies |
 

@@ -2,8 +2,12 @@
 Backward compatibility test for the Python API
 Ensures that existing functionality still works after Open-Meteo integration
 """
-from gritting_prediction_system import GrittingPredictionSystem
-from gritting_api import get_system, validate_weather_data, map_weather_condition
+import sys
+sys.path.insert(0, '../python-api')
+
+from gritting_predictor import GrittingPredictor
+from gritting_data_service import create_route_service
+from gritting_api import get_predictor, validate_weather_data, map_weather_condition
 import json
 
 print("=" * 70)
@@ -11,10 +15,10 @@ print("BACKWARD COMPATIBILITY TEST - Python API")
 print("=" * 70)
 
 # Test 1: Verify the prediction system still works
-print("\n1. Testing GrittingPredictionSystem...")
-system = GrittingPredictionSystem()
-system.load_route_database('../data/gritting_data.db')
-system.load_models('models/gritting')
+print("\n1. Testing GrittingPredictor...")
+route_service = create_route_service('../data/gritting_data.db', '../data/routes_database.csv')
+predictor = GrittingPredictor(route_lookup=route_service.route_lookup)
+predictor.load_models('../python-api/models/gritting')
 
 weather_data = {
     'temperature_c': -3.5,
@@ -27,7 +31,7 @@ weather_data = {
     'forecast_min_temp_c': -5.0
 }
 
-result = system.predict('R001', weather_data)
+result = predictor.predict('R001', weather_data)
 print(f"   ✓ Prediction successful: {result['gritting_decision']}")
 assert 'route_id' in result
 assert 'gritting_decision' in result
@@ -61,7 +65,7 @@ print("   ✓ Invalid weather data rejected")
 print("\n3. Testing precipitation type sanitization...")
 test_weather = valid_weather.copy()
 test_weather['precipitation_type'] = 'unknown_type'
-result = system.predict('R001', test_weather)
+result = predictor.predict('R001', test_weather)
 assert result is not None  # Should not crash
 print("   ✓ Unknown precipitation types handled gracefully")
 
@@ -75,12 +79,12 @@ print("   ✓ Weather condition mapping works")
 
 # Test 5: Verify route lookup
 print("\n5. Testing route lookup...")
-assert 'R001' in system.route_lookup
-assert 'R002' in system.route_lookup
-route_info = system.route_lookup['R001']
+assert 'R001' in predictor.route_lookup
+assert 'R002' in predictor.route_lookup
+route_info = predictor.route_lookup['R001']
 assert 'route_name' in route_info
 assert 'priority' in route_info
-print(f"   ✓ Route lookup works (found {len(system.route_lookup)} routes)")
+print(f"   ✓ Route lookup works (found {len(predictor.route_lookup)} routes)")
 
 # Test 6: Verify all prediction response fields
 print("\n6. Testing prediction response structure...")
