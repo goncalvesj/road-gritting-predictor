@@ -5,7 +5,8 @@ on:
     branches: [main]
     paths:
       - 'python-api/**'
-      - '.github/workflows/gritting-predictor.yaml'
+      - 'data/gritting_data.db'
+      - '.github/workflows/gritting-api-python.yaml'
   workflow_dispatch:
 
 jobs:
@@ -39,7 +40,7 @@ jobs:
       - name: Train models and verify system
         working-directory: python-api
         run: |
-          python gritting_prediction_system.py
+          python model_trainer.py
 
   push-gritting-api-to-acr:
     needs: python-build

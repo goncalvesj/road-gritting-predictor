@@ -4,9 +4,8 @@ on:
   push:
     branches: [main]
     paths:
-      - 'python-api/gritting_prediction_system.py'
-      - 'python-api/edinburgh_gritting_training_dataset.csv'
-      - 'python-api/routes_database.csv'
+      - 'python-api/model_trainer.py'
+      - 'data/gritting_data.db'
       - '.github/workflows/model-deployment.yaml'
   workflow_dispatch:
 
@@ -35,7 +34,7 @@ jobs:
       - name: Train models
         working-directory: python-api
         run: |
-          python gritting_prediction_system.py
+          python model_trainer.py
 
       - name: Upload models artifact
         uses: actions/upload-artifact@v4

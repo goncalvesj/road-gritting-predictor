@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'dotnet-api/**'
+      - 'dotnet-model-trainer/**'
+      - 'data/gritting_data.db'
       - '.github/workflows/gritting-api-dotnet.yaml'
   workflow_dispatch:
 
