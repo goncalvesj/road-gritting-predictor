@@ -6,15 +6,12 @@ Usage:
     python model_trainer.py
 """
 import pandas as pd
-import numpy as np
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 import pickle
 import sqlite3
 import os
-import json
-
 
 class GrittingModelTrainer:
     """Trains gritting decision and salt amount prediction models."""

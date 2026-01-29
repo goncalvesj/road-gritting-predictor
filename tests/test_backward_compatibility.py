@@ -7,8 +7,7 @@ sys.path.insert(0, '../python-api')
 
 from gritting_predictor import GrittingPredictor
 from gritting_data_service import create_route_service
-from gritting_api import get_predictor, validate_weather_data, map_weather_condition
-import json
+from gritting_api import validate_weather_data, map_weather_condition
 
 print("=" * 70)
 print("BACKWARD COMPATIBILITY TEST - Python API")
