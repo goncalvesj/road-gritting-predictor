@@ -2,12 +2,7 @@
   "definition": {
     "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
     "contentVersion": "1.0.0.0",
-    "parameters": {
-      "predictionApiUrl": {
-        "type": "String",
-        "defaultValue": "http://localhost:8080"
-      }
-    },
+    "parameters": {},
     "triggers": {
       "manual": {
         "type": "Request",
@@ -46,6 +41,22 @@
             "hourly": "temperature_2m,precipitation_probability",
             "forecast_days": "1",
             "timezone": "auto"
+          }
+        }
+      },
+      "Weather_API_Error_Response": {
+        "type": "Response",
+        "runAfter": {
+          "Get_Weather_Data": ["Failed", "TimedOut"]
+        },
+        "inputs": {
+          "statusCode": 502,
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "success": false,
+            "error": "Failed to fetch weather data from Open-Meteo API"
           }
         }
       },
@@ -408,14 +419,30 @@
           ]
         }
       },
-      "Call_Prediction_API": {
-        "type": "Http",
+      "Initialize_Road_Surface_Temp": {
+        "type": "InitializeVariable",
         "runAfter": {
           "Initialize_Forecast_Min_Temp": ["Succeeded"]
         },
         "inputs": {
+          "variables": [
+            {
+              "name": "road_surface_temp",
+              "type": "float",
+              "value": "@sub(body('Parse_Weather_Response')?['current']?['temperature_2m'], 1.5)"
+            }
+          ]
+        },
+        "description": "Road surface temp is typically 1.5°C lower than air temp due to thermal radiation"
+      },
+      "Call_Prediction_API": {
+        "type": "Http",
+        "runAfter": {
+          "Initialize_Road_Surface_Temp": ["Succeeded"]
+        },
+        "inputs": {
           "method": "POST",
-          "uri": "@{parameters('predictionApiUrl')}/predict",
+          "uri": "@{appsetting('PREDICTION_API_URL')}/predict",
           "headers": {
             "Content-Type": "application/json"
           },
@@ -428,9 +455,25 @@
               "wind_speed_kmh": "@body('Parse_Weather_Response')?['current']?['wind_speed_10m']",
               "precipitation_type": "@variables('precipitation_type')",
               "precipitation_prob_pct": "@variables('precipitation_probability')",
-              "road_surface_temp_c": "@sub(body('Parse_Weather_Response')?['current']?['temperature_2m'], 1.5)",
+              "road_surface_temp_c": "@variables('road_surface_temp')",
               "forecast_min_temp_c": "@variables('forecast_min_temp')"
             }
+          }
+        }
+      },
+      "Prediction_API_Error_Response": {
+        "type": "Response",
+        "runAfter": {
+          "Call_Prediction_API": ["Failed", "TimedOut"]
+        },
+        "inputs": {
+          "statusCode": 502,
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "success": false,
+            "error": "Failed to get prediction from the prediction API"
           }
         }
       },
@@ -454,7 +497,7 @@
               "wind_speed_kmh": "@body('Parse_Weather_Response')?['current']?['wind_speed_10m']",
               "precipitation_type": "@variables('precipitation_type')",
               "precipitation_prob_pct": "@variables('precipitation_probability')",
-              "road_surface_temp_c": "@sub(body('Parse_Weather_Response')?['current']?['temperature_2m'], 1.5)",
+              "road_surface_temp_c": "@variables('road_surface_temp')",
               "forecast_min_temp_c": "@variables('forecast_min_temp')"
             },
             "weather_source": "open-meteo"

@@ -12,6 +12,11 @@ This Logic App demonstrates how Azure Logic Apps can act as an API orchestration
 
 ## Workflow: GetGrittingPrediction
 
+The workflow orchestrates calls to the weather and prediction APIs with error handling:
+- Returns HTTP 502 if the weather API call fails
+- Returns HTTP 502 if the prediction API call fails
+- Returns HTTP 200 with combined results on success
+
 ### Input
 ```json
 {
