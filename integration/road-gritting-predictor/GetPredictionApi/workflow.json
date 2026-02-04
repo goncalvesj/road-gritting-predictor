@@ -4,7 +4,7 @@
         "contentVersion": "1.0.0.0",
         "parameters": {},
         "triggers": {
-            "manual": {
+            "Request": {
                 "type": "Request",
                 "kind": "Http",
                 "inputs": {
@@ -211,7 +211,16 @@
                 }
             }
         },
-        "outputs": {}
+        "outputs": {},
+        "metadata": {
+            "IaCMetadata": {
+                "IaCGenerationDate": "2026-02-04T12:09:33.932Z",
+                "IaCWorkflowCorrelationId": "2247420c-e326-4581-b562-d310fc915d8a",
+                "LogicAppsExtensionVersion": "5.230.15",
+                "LogicAppsPinnedBundle": false,
+                "LogicAppsCurrentBundleVersion": "1.160.9"
+            }
+        }
     },
     "kind": "Stateful"
 }
