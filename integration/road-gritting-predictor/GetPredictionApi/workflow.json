@@ -1,0 +1,226 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "contentVersion": "1.0.0.0",
+        "parameters": {},
+        "triggers": {
+            "Request": {
+                "type": "Request",
+                "kind": "Http",
+                "inputs": {
+                    "method": "POST",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "route_id": {
+                                "type": "string"
+                            },
+                            "latitude": {
+                                "type": "number"
+                            },
+                            "longitude": {
+                                "type": "number"
+                            }
+                        },
+                        "required": [
+                            "route_id",
+                            "latitude",
+                            "longitude"
+                        ]
+                    }
+                }
+            }
+        },
+        "actions": {
+            "Get_Weather_Data": {
+                "type": "Http",
+                "inputs": {
+                    "uri": "https://api.open-meteo.com/v1/forecast",
+                    "method": "GET",
+                    "queries": {
+                        "latitude": "@{triggerBody()?['latitude']}",
+                        "longitude": "@{triggerBody()?['longitude']}",
+                        "current": "temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,precipitation,weather_code",
+                        "hourly": "temperature_2m,precipitation_probability",
+                        "forecast_days": "1",
+                        "timezone": "auto"
+                    }
+                },
+                "runAfter": {}
+            },
+            "Weather_API_Error_Response": {
+                "type": "Response",
+                "inputs": {
+                    "statusCode": 502,
+                    "headers": {
+                        "Content-Type": "application/json"
+                    },
+                    "body": {
+                        "success": false,
+                        "error": "Failed to fetch weather data from Open-Meteo API"
+                    }
+                },
+                "runAfter": {
+                    "Get_Weather_Data": [
+                        "Failed",
+                        "TimedOut"
+                    ]
+                }
+            },
+            "Parse_Weather_Response": {
+                "type": "ParseJson",
+                "inputs": {
+                    "content": "@body('Get_Weather_Data')",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "current": {
+                                "type": "object",
+                                "properties": {
+                                    "temperature_2m": {
+                                        "type": "number"
+                                    },
+                                    "apparent_temperature": {
+                                        "type": "number"
+                                    },
+                                    "relative_humidity_2m": {
+                                        "type": "number"
+                                    },
+                                    "wind_speed_10m": {
+                                        "type": "number"
+                                    },
+                                    "precipitation": {
+                                        "type": "number"
+                                    },
+                                    "weather_code": {
+                                        "type": "integer"
+                                    }
+                                }
+                            },
+                            "hourly": {
+                                "type": "object",
+                                "properties": {
+                                    "temperature_2m": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "number"
+                                        }
+                                    },
+                                    "precipitation_probability": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "runAfter": {
+                    "Get_Weather_Data": [
+                        "Succeeded"
+                    ]
+                }
+            },
+            "Call_Prediction_API": {
+                "type": "Http",
+                "inputs": {
+                    "uri": "@{appsetting('PREDICTION_API_URL')}/predict",
+                    "method": "POST",
+                    "headers": {
+                        "Content-Type": "application/json"
+                    },
+                    "body": {
+                        "route_id": "@triggerBody()?['route_id']",
+                        "weather": {
+                            "temperature_c": "@body('Parse_Weather_Response')?['current']?['temperature_2m']",
+                            "feels_like_c": "@body('Parse_Weather_Response')?['current']?['apparent_temperature']",
+                            "humidity_pct": "@body('Parse_Weather_Response')?['current']?['relative_humidity_2m']",
+                            "wind_speed_kmh": "@body('Parse_Weather_Response')?['current']?['wind_speed_10m']",
+                            "precipitation_type": "@body('Process_Weather_Data')?['precipitation_type']",
+                            "precipitation_prob_pct": "@body('Process_Weather_Data')?['precipitation_probability']",
+                            "road_surface_temp_c": "@body('Process_Weather_Data')?['road_surface_temp']",
+                            "forecast_min_temp_c": "@body('Process_Weather_Data')?['forecast_min_temp']"
+                        }
+                    }
+                },
+                "runAfter": {
+                    "Process_Weather_Data": [
+                        "Succeeded"
+                    ]
+                }
+            },
+            "Prediction_API_Error_Response": {
+                "type": "Response",
+                "inputs": {
+                    "statusCode": 502,
+                    "headers": {
+                        "Content-Type": "application/json"
+                    },
+                    "body": {
+                        "success": false,
+                        "error": "Failed to get prediction from the prediction API"
+                    }
+                },
+                "runAfter": {
+                    "Call_Prediction_API": [
+                        "Failed",
+                        "TimedOut"
+                    ]
+                }
+            },
+            "Response": {
+                "type": "Response",
+                "inputs": {
+                    "statusCode": 200,
+                    "headers": {
+                        "Content-Type": "application/json"
+                    },
+                    "body": {
+                        "success": true,
+                        "prediction": "@body('Call_Prediction_API')?['prediction']",
+                        "weather": {
+                            "temperature_c": "@body('Parse_Weather_Response')?['current']?['temperature_2m']",
+                            "feels_like_c": "@body('Parse_Weather_Response')?['current']?['apparent_temperature']",
+                            "humidity_pct": "@body('Parse_Weather_Response')?['current']?['relative_humidity_2m']",
+                            "wind_speed_kmh": "@body('Parse_Weather_Response')?['current']?['wind_speed_10m']",
+                            "precipitation_type": "@body('Process_Weather_Data')?['precipitation_type']",
+                            "precipitation_prob_pct": "@body('Process_Weather_Data')?['precipitation_probability']",
+                            "road_surface_temp_c": "@body('Process_Weather_Data')?['road_surface_temp']",
+                            "forecast_min_temp_c": "@body('Process_Weather_Data')?['forecast_min_temp']"
+                        },
+                        "weather_source": "open-meteo"
+                    }
+                },
+                "runAfter": {
+                    "Call_Prediction_API": [
+                        "Succeeded"
+                    ]
+                }
+            },
+            "Process_Weather_Data": {
+                "type": "JavaScriptCode",
+                "inputs": {
+                    "code": "// Get the parsed weather response from the prior action\nvar body = workflowContext.actions.Parse_Weather_Response.outputs.body;\nvar current = body.current;\nvar hourly = body.hourly;\n\n// Extract current weather values\nvar weatherCode = current.weather_code || 0;\nvar airTemp = current.temperature_2m || 0;\n\n// WMO weather codes for precipitation types\nvar snowCodes = [71, 73, 75, 77, 85, 86];\nvar rainCodes = [51, 53, 55, 61, 63, 65, 80, 81, 82, 95];\nvar sleetCodes = [56, 57, 66, 67, 96, 99];\n\n// Determine precipitation type\nvar precipitationType = \"none\";\nif (snowCodes.indexOf(weatherCode) !== -1) {\n    precipitationType = \"snow\";\n} else if (rainCodes.indexOf(weatherCode) !== -1) {\n    precipitationType = \"rain\";\n} else if (sleetCodes.indexOf(weatherCode) !== -1) {\n    precipitationType = \"sleet\";\n}\n\n// Get hourly data arrays\nvar hourlyTemps = (hourly && hourly.temperature_2m) ? hourly.temperature_2m : [];\nvar hourlyPrecipProb = (hourly && hourly.precipitation_probability) ? hourly.precipitation_probability : [];\n\n// Calculate derived values\nvar precipProb = hourlyPrecipProb.length > 0 ? hourlyPrecipProb[0] : 0;\nvar forecastMinTemp = hourlyTemps.length > 0 ? Math.min.apply(null, hourlyTemps) : airTemp;\nvar roadSurfaceTemp = airTemp - 1.5;\n\nreturn {\n    precipitation_type: precipitationType,\n    precipitation_probability: precipProb,\n    forecast_min_temp: forecastMinTemp,\n    road_surface_temp: roadSurfaceTemp\n};"
+                },
+                "runAfter": {
+                    "Parse_Weather_Response": [
+                        "Succeeded"
+                    ]
+                }
+            }
+        },
+        "outputs": {},
+        "metadata": {
+            "IaCMetadata": {
+                "IaCGenerationDate": "2026-02-04T12:09:33.932Z",
+                "IaCWorkflowCorrelationId": "2247420c-e326-4581-b562-d310fc915d8a",
+                "LogicAppsExtensionVersion": "5.230.15",
+                "LogicAppsPinnedBundle": false,
+                "LogicAppsCurrentBundleVersion": "1.160.9"
+            }
+        }
+    },
+    "kind": "Stateful"
+}

@@ -7,16 +7,30 @@ Machine learning-based road gritting decision system with weather integration. T
 - 🎯 **Multi-output ML Prediction**: Predicts both gritting decision (yes/no) and salt amount
 - 🌦️ **Weather Integration**: Automatically calculates ice and snow risk from weather data
 - 🛣️ **Route-based Predictions**: Takes into account route priority, length, and type
-- 🔌 **REST API**: Easy integration with Flask-based API
+- 🔌 **Multiple API Options**: Choose between Python, .NET, or Azure Logic Apps
 - 🐳 **Docker Support**: Containerized deployment with Docker Compose
 - 📊 **Training Dataset**: Synthetic Edinburgh gritting data based on UK standards
 - 🧮 **Smart Risk Calculation**: Follows NWSRG (UK National Winter Service Research Group) guidelines
 
+## API Options
+
+This project provides **three API implementations** to suit different technology stacks and deployment preferences:
+
+| Option | Technology | Best For |
+|--------|------------|----------|
+| **Python API** | Flask + scikit-learn | Data science teams, rapid prototyping |
+| **.NET API** | ASP.NET Core + ML.NET | Enterprise .NET environments |
+| **Azure Logic Apps** | Logic Apps Standard | Serverless orchestration, Azure-native solutions |
+
 ## Quick Start
 
-### Option A: Docker (Recommended)
+Choose one of the three API options below:
 
-The easiest way to run the application is using Docker:
+---
+
+### Option 1: Python API (Recommended for Data Science)
+
+#### Docker (Recommended)
 
 ```bash
 # Clone the repository
@@ -29,10 +43,7 @@ docker-compose up -d
 # The API will be available at http://localhost:5000
 ```
 
-To stop the container:
-```bash
-docker-compose down
-```
+To stop: `docker-compose down`
 
 For development with hot-reload:
 ```bash
@@ -40,49 +51,98 @@ docker-compose --profile dev up gritting-api-dev
 # Development server available at http://localhost:5001
 ```
 
-### Option B: Local Installation
-
-#### 1. Installation
+#### Local Installation
 
 ```bash
-git clone https://github.com/goncalvesj/road-gritting-predictor.git
 cd road-gritting-predictor/python-api
 pip install -r requirements.txt
-```
 
-#### 2. Train the Models
-
-```bash
 # Generate SQLite database from CSV files (first time only)
 cd ../data && python csv_to_sqlite.py && cd ../python-api
 
 # Train the models
 python model_trainer.py
-```
 
-This will:
-- Load the training dataset
-- Train decision and amount prediction models
-- Save models to `models/` directory
-- Display accuracy metrics
-
-#### 3. Run the API Server
-
-```bash
+# Run the API
 python gritting_api.py
+# API available at http://localhost:5000
 ```
 
-The API will be available at `http://localhost:5000`
+---
 
-#### 4. Make Predictions
+### Option 2: .NET API (Recommended for Enterprise)
+
+#### Docker
 
 ```bash
-python ../tests/example_usage.py
+cd road-gritting-predictor/dotnet-api
+
+# Run with Docker Compose
+docker-compose up -d
+
+# The API will be available at http://localhost:8080
 ```
+
+#### Local Installation
+
+```bash
+cd road-gritting-predictor/dotnet-api
+
+# Build and run
+dotnet run
+
+# API available at http://localhost:5000
+```
+
+**Note:** The .NET API uses ML.NET models. Train the models first using the dotnet-model-trainer:
+```bash
+cd ../dotnet-model-trainer
+dotnet run
+```
+
+---
+
+### Option 3: Azure Logic Apps (Recommended for Serverless/Azure-native)
+
+The Logic Apps implementation acts as an orchestration layer that:
+1. Receives prediction requests
+2. Fetches weather data from Open-Meteo
+3. Processes weather conditions
+4. Calls a backend prediction API (Python or .NET)
+5. Returns combined results
+
+#### Prerequisites
+- [Azure Functions Core Tools v4](https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local)
+- [VS Code](https://code.visualstudio.com/) with [Azure Logic Apps (Standard) extension](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-azurelogicapps)
+- [Azurite](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite) for local storage emulation
+
+#### Local Development
+
+```bash
+cd road-gritting-predictor/integration/road-gritting-predictor
+
+# Copy settings file
+cp local.settings.json.example local.settings.json
+
+# Start Azurite (in a separate terminal)
+azurite --silent
+
+# Start a backend prediction API (Python or .NET) in another terminal
+cd ../../python-api && python gritting_api.py
+
+# Start the Logic App
+func start
+
+# Workflow available at: http://localhost:7071/api/GetPredictionApi/triggers/manual/invoke
+```
+
+See [integration/road-gritting-predictor/README.md](integration/road-gritting-predictor/README.md) for detailed Logic Apps documentation.
+
+---
 
 ### Making API Requests
 
-Use the API directly:
+#### Python API / .NET API
 
 ```bash
 curl -X POST http://localhost:5000/predict \
@@ -102,6 +162,20 @@ curl -X POST http://localhost:5000/predict \
   }'
 ```
 
+#### Azure Logic Apps
+
+```bash
+curl -X POST http://localhost:7071/api/GetPredictionApi/triggers/manual/invoke \
+  -H "Content-Type: application/json" \
+  -d '{
+    "route_id": "R001",
+    "latitude": 55.9533,
+    "longitude": -3.1883
+  }'
+```
+
+**Note:** The Logic Apps workflow automatically fetches weather data from Open-Meteo based on the provided coordinates.
+
 ## Project Structure
 
 ```
@@ -119,7 +193,7 @@ road-gritting-predictor/
 │   ├── DATASET_README.md                 # Dataset documentation
 │   └── SOLUTION_REVIEW.md                # Solution review documentation
 │
-├── python-api/                            # Python ML prediction system
+├── python-api/                            # Python ML prediction API
 │   ├── requirements.txt                   # Python dependencies
 │   ├── Dockerfile                         # Docker container definition
 │   ├── docker-compose.yml                 # Docker Compose configuration
@@ -130,7 +204,7 @@ road-gritting-predictor/
 │   ├── open_meteo_weather_service.py     # Open-Meteo weather service
 │   └── api.http                          # HTTP test file
 │
-├── dotnet-api/                           # .NET Core API
+├── dotnet-api/                           # .NET Core ML prediction API
 │   ├── Program.cs                        # API entry point
 │   ├── GrittingApi.csproj               # Project file
 │   ├── Dockerfile                        # Docker container definition
@@ -143,6 +217,15 @@ road-gritting-predictor/
 │   ├── Program.cs                        # Trainer entry point
 │   ├── ModelTrainer.csproj              # Project file
 │   └── README.md                        # Trainer documentation
+│
+├── integration/                          # Azure Logic Apps Standard
+│   └── road-gritting-predictor/         # Logic App project
+│       ├── README.md                    # Logic Apps documentation
+│       ├── host.json                    # Host configuration
+│       ├── local.settings.json          # Local settings
+│       ├── GetPredictionApi/            # Prediction workflow
+│       │   └── workflow.json            # Workflow definition
+│       └── lib/                         # JavaScript inline code
 │
 ├── web-ui/                               # Web UI (React/TypeScript)
 │   ├── src/                             # Source code
@@ -213,7 +296,9 @@ See [docs/DATASET_README.md](docs/DATASET_README.md) for full documentation.
 
 ## API Endpoints
 
-### POST /predict
+### Python API / .NET API
+
+#### POST /predict
 Make a gritting prediction with weather data
 
 **Request:**
@@ -236,7 +321,7 @@ Make a gritting prediction with weather data
 }
 ```
 
-### POST /predict/auto-weather
+#### POST /predict/auto-weather
 Fetch weather automatically from API. Uses **Open-Meteo** as the primary weather provider (no API key required). Falls back to OpenWeatherMap if `OPENWEATHER_API_KEY` environment variable is set and Open-Meteo is unavailable.
 
 **Request:**
@@ -252,11 +337,43 @@ Fetch weather automatically from API. Uses **Open-Meteo** as the primary weather
 - **Primary**: [Open-Meteo](https://open-meteo.com/) - Free, open-source weather API with no API key required
 - **Fallback**: OpenWeatherMap - Requires `OPENWEATHER_API_KEY` environment variable
 
-### GET /routes
+#### GET /routes
 List all available routes
 
-### GET /health
+#### GET /health
 Health check endpoint - returns API status and whether models are loaded
+
+### Azure Logic Apps
+
+#### POST /api/GetPredictionApi/triggers/manual/invoke
+Orchestrated prediction workflow that automatically fetches weather data
+
+**Request:**
+```json
+{
+  "route_id": "R001",
+  "latitude": 55.9533,
+  "longitude": -3.1883
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "prediction": {
+    "gritting_decision": "yes",
+    "salt_amount_kg": 500,
+    ...
+  },
+  "weather": {
+    "temperature_c": -2.5,
+    "precipitation_type": "snow",
+    ...
+  },
+  "weather_source": "open-meteo"
+}
+```
 
 ## Extending the System
 
@@ -284,10 +401,16 @@ The system uses **Open-Meteo** as the default weather provider (no API key requi
 - Integration: `python-api/gritting_api.py` → `fetch_weather_from_api()` function
 - Fallback: OpenWeatherMap (if `OPENWEATHER_API_KEY` is set)
 
-**Dotnet API:**
+**.NET API:**
 - Main service: `dotnet-api/Services/OpenMeteoWeatherService.cs`
 - Integration: `dotnet-api/Services/WeatherService.cs`
 - Fallback: OpenWeatherMap (if `OPENWEATHER_API_KEY` is set)
+
+**Azure Logic Apps:**
+- Workflow: `integration/road-gritting-predictor/GetPredictionApi/workflow.json`
+- Weather fetching handled via HTTP action calling Open-Meteo API
+- JavaScript inline code processes WMO weather codes into precipitation types
+- Calls backend prediction API (Python or .NET) with enriched weather data
 
 To use a different weather provider, implement a new weather service class following the existing patterns.
 
@@ -335,12 +458,14 @@ For questions or issues, please open a GitHub issue.
 
 - [x] Docker containerization with Docker Compose
 - [x] Real-time weather API integration (Open-Meteo, OpenWeatherMap)
+- [x] Azure Logic Apps Standard for serverless orchestration
 - [ ] Multi-route batch predictions
 - [ ] Historical tracking and analytics dashboard
 - [ ] Deep learning models (LSTM for time-series prediction)
 - [ ] Mobile app integration
 - [ ] Live gritter truck tracking
 - [ ] Cost optimization algorithms
+- [ ] Azure deployment templates (ARM/Bicep)
 
 ---
 
