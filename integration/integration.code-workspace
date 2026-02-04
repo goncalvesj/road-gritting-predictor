@@ -1,0 +1,18 @@
+{
+  "folders": [
+    {
+      "name": "road-gritting-predictor",
+      "path": "./road-gritting-predictor"
+    }
+  ],
+  "settings": {
+    "terminal.integrated.env.windows": {
+      "PATH": "C:\\Users\\WadeWilson\\.azurelogicapps\\dependencies\\DotNetSDK;${env:PATH}"
+    },
+    "omnisharp.dotNetCliPaths": [
+      "C:\\Users\\WadeWilson\\.azurelogicapps\\dependencies\\DotNetSDK"
+    ],
+    "debug.internalConsoleOptions": "neverOpen",
+    "azurite.location": ""
+  }
+}

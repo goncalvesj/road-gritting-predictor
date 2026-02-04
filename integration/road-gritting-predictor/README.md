@@ -7,12 +7,26 @@ This is an Azure Logic Apps Standard application that orchestrates API calls for
 This Logic App demonstrates how Azure Logic Apps can act as an API orchestration layer. It:
 1. Receives a request with route_id, latitude, and longitude
 2. Calls the Open-Meteo weather API to get current weather conditions
-3. Transforms the weather data and calls the Python prediction API
-4. Returns the combined prediction and weather data to the caller
+3. Processes weather data using JavaScript inline code to determine precipitation type and calculate derived values (road surface temp, forecast min temp)
+4. Calls the Python prediction API with the enriched weather data
+5. Returns the combined prediction and weather data to the caller
 
-## Workflow: GetGrittingPrediction
+## Workflow: GetPredictionApi
 
 The workflow orchestrates calls to the weather and prediction APIs with error handling:
+
+### Actions
+1. **Get_Weather_Data** - Calls Open-Meteo API with latitude/longitude
+2. **Parse_Weather_Response** - Parses the JSON response from the weather API
+3. **Process_Weather_Data** - JavaScript inline code that:
+   - Determines precipitation type from WMO weather codes (snow, rain, sleet, or none)
+   - Calculates road surface temperature (air temp - 1.5°C)
+   - Extracts forecast minimum temperature from hourly data
+   - Gets precipitation probability
+4. **Call_Prediction_API** - Sends enriched weather data to the Python prediction API
+5. **Response** - Returns combined results
+
+### Error Handling
 - Returns HTTP 502 if the weather API call fails
 - Returns HTTP 502 if the prediction API call fails
 - Returns HTTP 200 with combined results on success
@@ -86,13 +100,13 @@ The workflow orchestrates calls to the weather and prediction APIs with error ha
    func start
    ```
 
-5. The workflow will be available at: `http://localhost:7071/api/GetGrittingPrediction/triggers/manual/invoke`
+5. The workflow will be available at: `http://localhost:7071/api/GetPredictionApi/triggers/manual/invoke`
 
 ### Testing
 
 Use the API endpoint with a POST request:
 ```bash
-curl -X POST http://localhost:7071/api/GetGrittingPrediction/triggers/manual/invoke \
+curl -X POST http://localhost:7071/api/GetPredictionApi/triggers/manual/invoke \
   -H "Content-Type: application/json" \
   -d '{
     "route_id": "R001",
