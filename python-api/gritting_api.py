@@ -292,10 +292,11 @@ def predict_with_auto_weather():
             'success': False,
             'error': str(e)
         }), 502
-    except Exception as e:
+    except Exception:
+        app.logger.exception("Unhandled exception in /predict/auto-weather endpoint")
         return jsonify({
             'success': False,
-            'error': f'Internal server error: {str(e)}'
+            'error': 'Internal server error'
         }), 500
 
 
@@ -317,10 +318,11 @@ def get_routes():
             for rid, info in route_service.route_lookup.items()
         ]
         return jsonify({'routes': routes}), 200
-    except Exception as e:
+    except Exception:
+        app.logger.exception("Unhandled exception in /routes endpoint")
         return jsonify({
             'success': False,
-            'error': f'Internal server error: {str(e)}'
+            'error': 'Internal server error'
         }), 500
 
 
@@ -353,12 +355,13 @@ def health_check():
             'models_loaded': False,
             'error': str(e)
         }), 503
-    except Exception as e:
+    except Exception:
         # Unexpected internal error during initialization
+        app.logger.exception("Unhandled exception in /health endpoint")
         return jsonify({
             'status': 'unhealthy',
             'models_loaded': False,
-            'error': f'Internal server error: {str(e)}'
+            'error': 'Internal server error'
         }), 500
 class WeatherAPIError(Exception):
     """Custom exception for weather API errors"""
