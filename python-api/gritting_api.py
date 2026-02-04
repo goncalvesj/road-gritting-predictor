@@ -6,6 +6,8 @@ from open_meteo_weather_service import OpenMeteoWeatherService, OpenMeteoWeather
 import requests
 import os
 import math
+import logging
+import traceback
 
 app = Flask(__name__)
 CORS(app)
@@ -185,14 +187,15 @@ def predict_gritting():
             'prediction': result
         }), 200
         
-    except RuntimeError as e:
+    except RuntimeError:
+        logging.error(traceback.format_exc())
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': 'Service temporarily unavailable'
         }), 503
     except Exception:
         # Log the full exception details server-side without exposing them to the client
-        app.logger.exception("Unhandled exception in /predict endpoint")
+        logging.error(traceback.format_exc())
         return jsonify({
             'success': False,
             'error': 'Internal server error'
@@ -282,18 +285,20 @@ def predict_with_auto_weather():
             'weather_source': 'open-meteo'
         }), 200
         
-    except RuntimeError as e:
+    except RuntimeError:
+        logging.error(traceback.format_exc())
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': 'Service temporarily unavailable'
         }), 503
-    except WeatherAPIError as e:
+    except WeatherAPIError:
+        logging.error(traceback.format_exc())
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': 'Weather service unavailable'
         }), 502
     except Exception:
-        app.logger.exception("Unhandled exception in /predict/auto-weather endpoint")
+        logging.error(traceback.format_exc())
         return jsonify({
             'success': False,
             'error': 'Internal server error'
@@ -319,7 +324,7 @@ def get_routes():
         ]
         return jsonify({'routes': routes}), 200
     except Exception:
-        app.logger.exception("Unhandled exception in /routes endpoint")
+        logging.error(traceback.format_exc())
         return jsonify({
             'success': False,
             'error': 'Internal server error'
@@ -348,16 +353,17 @@ def health_check():
             'models_loaded': False,
             'error': 'Models are not loaded'
         }), 503
-    except RuntimeError as e:
+    except RuntimeError:
         # Expected failure mode when models are missing or cannot be loaded
+        logging.error(traceback.format_exc())
         return jsonify({
             'status': 'unhealthy',
             'models_loaded': False,
-            'error': str(e)
+            'error': 'Service initialization failed'
         }), 503
     except Exception:
         # Unexpected internal error during initialization
-        app.logger.exception("Unhandled exception in /health endpoint")
+        logging.error(traceback.format_exc())
         return jsonify({
             'status': 'unhealthy',
             'models_loaded': False,
