@@ -196,6 +196,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [python-api, dotnet-api, dotnet-model-trainer, web-ui, logic-apps]
     if: always()
+    permissions:
+      contents: read
     steps:
       - name: Check results
         run: |
