@@ -11,6 +11,7 @@ trigger:
 pr: none
 
 variables:
+  - group: 'DP Corps Deployment Vars'
   - name: imageName
     value: 'gritting-api-python'
   - name: dockerfilePath
