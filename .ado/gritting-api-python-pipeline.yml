@@ -1,0 +1,81 @@
+# Pipeline for Python Gritting API
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - 'python-api/**'
+      - 'data/gritting_data.db'
+
+pr: none
+
+variables:
+  - name: imageName
+    value: 'gritting-api-python'
+  - name: dockerfilePath
+    value: 'python-api/Dockerfile'
+  - name: buildContext
+    value: '$(Build.SourcesDirectory)'
+  - name: imageTag
+    value: '$(Build.SourceVersion)'
+
+stages:
+  - stage: Build
+    displayName: 'Python Build Gritting Predictor'
+    jobs:
+      - job: PythonBuild
+        displayName: 'Python Build'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - checkout: self
+            displayName: 'Checkout Repository'
+
+          - task: UsePythonVersion@0
+            displayName: 'Set up Python 3.11'
+            inputs:
+              versionSpec: '3.11'
+              addToPath: true
+
+          - script: |
+              python -m pip install --upgrade pip
+              pip install -r python-api/requirements.txt
+              pip install flake8
+            displayName: 'Install dependencies'
+            workingDirectory: '$(Build.SourcesDirectory)'
+
+          - script: |
+              flake8 python-api/ --count --select=E9,F63,F7 --show-source --statistics
+              flake8 python-api/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+            displayName: 'Run linting'
+            workingDirectory: '$(Build.SourcesDirectory)'
+
+          - script: |
+              python model_trainer.py
+            displayName: 'Train models and verify system'
+            workingDirectory: '$(Build.SourcesDirectory)/python-api'
+
+  # Push to Azure Container Registry
+  - template: templates/push-to-acr.yml
+    parameters:
+      imageName: '$(imageName)'
+      dockerfilePath: '$(dockerfilePath)'
+      buildContext: '$(Build.SourcesDirectory)'
+      imageTag: '$(Build.SourceVersion)'
+      org: 'goncalvesj'
+      imageRepository: 'road-gritting-predictor'
+      dependsOn: 'Build'
+      poolName: '$(poolName)'
+      checkoutRepo: 'self'
+      imageLabels:
+        title: '$(imageName)'
+        description: 'Built from goncalvesj/road-gritting-predictor'
+        source: 'https://github.com/goncalvesj/road-gritting-predictor'
+
+  # # Deploy to Azure Container Apps
+  # - template: templates/deploy-to-aca.yml
+  #   parameters:
+  #     dependsOn: 'PushToACR'
+  #     poolName: '$(poolName)'
+  #     backendType: 'python'

@@ -1,0 +1,103 @@
+# Template: Push Docker Image to Azure Container Registry
+# Usage:
+#   - template: templates/push-to-acr.yml
+#     parameters:
+#       imageName: 'my-image'
+#       dockerfilePath: 'path/to/Dockerfile'
+#       buildContext: '$(Build.SourcesDirectory)'
+#       imageTag: '$(Build.SourceVersion)'
+#       dependsOn: 'Build'
+
+parameters:
+  - name: imageName
+    type: string
+  - name: dockerfilePath
+    type: string
+    default: 'Dockerfile'
+  - name: buildContext
+    type: string
+    default: '$(Build.SourcesDirectory)'
+  - name: imageTag
+    type: string
+    default: '$(Build.SourceVersion)'
+  - name: imageRepository
+    type: string
+    default: ''
+  - name: org
+    type: string
+    default: ''
+  - name: dependsOn
+    type: string
+    default: ''
+  - name: poolName
+    type: string    
+  - name: checkoutRepo
+    type: string
+    default: 'self'
+  - name: imageLabels
+    type: object
+    default:
+      title: ''
+      description: ''
+      source: ''
+
+stages:
+  - stage: PushToACR
+    displayName: 'Push to ACR'
+    ${{ if ne(parameters.dependsOn, '') }}:
+      dependsOn: ${{ parameters.dependsOn }}
+    condition: |
+      and(
+        succeeded(),
+        eq(variables['Build.SourceBranch'], 'refs/heads/main'),
+        ne(variables['Build.Reason'], 'PullRequest'),
+        ne(variables['acrName'], ''),
+        ne(variables['azureServiceConnection'], '')
+      )
+    jobs:
+      - job: DockerBuildPush
+        displayName: 'Build and Push Docker Image'
+        pool:
+          name: ${{ parameters.poolName }}
+        variables:
+          acrLoginServer: '$(acrName).azurecr.io'
+          imageRepository: '${{ parameters.org }}/${{ coalesce(parameters.imageRepository, parameters.imageName) }}/${{ parameters.imageName }}'
+          fullImageUri: '$(acrLoginServer)/$(imageRepository):${{ parameters.imageTag }}'
+        steps:
+          - checkout: ${{ parameters.checkoutRepo }}
+            displayName: 'Checkout Repository'
+
+          - task: Docker@2
+            displayName: 'Build Docker Image'
+            inputs:
+              command: 'build'
+              Dockerfile: '${{ parameters.buildContext }}/${{ parameters.dockerfilePath }}'
+              buildContext: '${{ parameters.buildContext }}'
+              arguments: '-t $(acrLoginServer)/$(imageRepository):${{ parameters.imageTag }} -t $(acrLoginServer)/$(imageRepository):latest --label "org.opencontainers.image.title=${{ coalesce(parameters.imageLabels.title, parameters.imageName) }}" --label "org.opencontainers.image.description=${{ parameters.imageLabels.description }}" --label "org.opencontainers.image.source=${{ parameters.imageLabels.source }}" --label "org.opencontainers.image.revision=$(Build.SourceVersion)"'
+              addPipelineData: false
+
+          - task: AzureCLI@2
+            displayName: 'Login to ACR and Push Docker Image'
+            inputs:
+              azureSubscription: '$(azureServiceConnection)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                az acr login --name $(acrName)
+                docker push $(acrLoginServer)/$(imageRepository):${{ parameters.imageTag }}
+                docker push $(acrLoginServer)/$(imageRepository):latest
+
+          - task: AzureCLI@2
+            displayName: 'Get Image Digest and Set Output Variables'
+            name: dockerOutput
+            inputs:
+              azureSubscription: '$(azureServiceConnection)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                # Get the image digest
+                DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' $(acrLoginServer)/$(imageRepository):${{ parameters.imageTag }} | cut -d'@' -f2)
+                echo "##vso[task.setvariable variable=imageDigest;isOutput=true]$DIGEST"
+                echo "##vso[task.setvariable variable=imageUri;isOutput=true]$(fullImageUri)"
+                echo "Image URI: $(fullImageUri)"
+                echo "Image Digest: $DIGEST"
