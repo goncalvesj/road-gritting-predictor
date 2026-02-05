@@ -138,10 +138,10 @@
                             "feels_like_c": "@body('Parse_Weather_Response')?['current']?['apparent_temperature']",
                             "humidity_pct": "@body('Parse_Weather_Response')?['current']?['relative_humidity_2m']",
                             "wind_speed_kmh": "@body('Parse_Weather_Response')?['current']?['wind_speed_10m']",
-                            "precipitation_type": "@body('Process_Weather_Data')?['precipitation_type']",
-                            "precipitation_prob_pct": "@body('Process_Weather_Data')?['precipitation_probability']",
-                            "road_surface_temp_c": "@body('Process_Weather_Data')?['road_surface_temp']",
-                            "forecast_min_temp_c": "@body('Process_Weather_Data')?['forecast_min_temp']"
+                            "precipitation_type": "@outputs('Process_Weather_Data')?['precipitation_type']",
+                            "precipitation_prob_pct": "@outputs('Process_Weather_Data')?['precipitation_probability']",
+                            "road_surface_temp_c": "@outputs('Process_Weather_Data')?['road_surface_temp']",
+                            "forecast_min_temp_c": "@outputs('Process_Weather_Data')?['forecast_min_temp']"
                         }
                     }
                 },
@@ -185,10 +185,10 @@
                             "feels_like_c": "@body('Parse_Weather_Response')?['current']?['apparent_temperature']",
                             "humidity_pct": "@body('Parse_Weather_Response')?['current']?['relative_humidity_2m']",
                             "wind_speed_kmh": "@body('Parse_Weather_Response')?['current']?['wind_speed_10m']",
-                            "precipitation_type": "@body('Process_Weather_Data')?['precipitation_type']",
-                            "precipitation_prob_pct": "@body('Process_Weather_Data')?['precipitation_probability']",
-                            "road_surface_temp_c": "@body('Process_Weather_Data')?['road_surface_temp']",
-                            "forecast_min_temp_c": "@body('Process_Weather_Data')?['forecast_min_temp']"
+                            "precipitation_type": "@outputs('Process_Weather_Data')?['precipitation_type']",
+                            "precipitation_prob_pct": "@outputs('Process_Weather_Data')?['precipitation_probability']",
+                            "road_surface_temp_c": "@outputs('Process_Weather_Data')?['road_surface_temp']",
+                            "forecast_min_temp_c": "@outputs('Process_Weather_Data')?['forecast_min_temp']"
                         },
                         "weather_source": "open-meteo"
                     }
@@ -202,7 +202,7 @@
             "Process_Weather_Data": {
                 "type": "JavaScriptCode",
                 "inputs": {
-                    "code": "// Get the parsed weather response from the prior action\nvar body = workflowContext.actions.Parse_Weather_Response.outputs.body;\nvar current = body.current;\nvar hourly = body.hourly;\n\n// Extract current weather values\nvar weatherCode = current.weather_code || 0;\nvar airTemp = current.temperature_2m || 0;\n\n// WMO weather codes for precipitation types\nvar snowCodes = [71, 73, 75, 77, 85, 86];\nvar rainCodes = [51, 53, 55, 61, 63, 65, 80, 81, 82, 95];\nvar sleetCodes = [56, 57, 66, 67, 96, 99];\n\n// Determine precipitation type\nvar precipitationType = \"none\";\nif (snowCodes.indexOf(weatherCode) !== -1) {\n    precipitationType = \"snow\";\n} else if (rainCodes.indexOf(weatherCode) !== -1) {\n    precipitationType = \"rain\";\n} else if (sleetCodes.indexOf(weatherCode) !== -1) {\n    precipitationType = \"sleet\";\n}\n\n// Get hourly data arrays\nvar hourlyTemps = (hourly && hourly.temperature_2m) ? hourly.temperature_2m : [];\nvar hourlyPrecipProb = (hourly && hourly.precipitation_probability) ? hourly.precipitation_probability : [];\n\n// Calculate derived values\nvar precipProb = hourlyPrecipProb.length > 0 ? hourlyPrecipProb[0] : 0;\nvar forecastMinTemp = hourlyTemps.length > 0 ? Math.min.apply(null, hourlyTemps) : airTemp;\nvar roadSurfaceTemp = airTemp - 1.5;\n\nreturn {\n    precipitation_type: precipitationType,\n    precipitation_probability: precipProb,\n    forecast_min_temp: forecastMinTemp,\n    road_surface_temp: roadSurfaceTemp\n};"
+                    "code": "// Get the parsed weather response from the prior action\nvar body = workflowContext.actions.Parse_Weather_Response.outputs.body;\nvar current = body.current || {};\nvar hourly = body.hourly || {};\n\n// Extract current weather values with type checking\nvar weatherCode = parseInt(current.weather_code) || 0;\nvar airTemp = parseFloat(current.temperature_2m);\nif (isNaN(airTemp)) airTemp = 0;\n\n// WMO weather codes for precipitation types\nvar snowCodes = [71, 73, 75, 77, 85, 86];\nvar rainCodes = [51, 53, 55, 61, 63, 65, 80, 81, 82, 95];\nvar sleetCodes = [56, 57, 66, 67, 96, 99];\n\n// Determine precipitation type\nvar precipitationType = \"none\";\nif (snowCodes.indexOf(weatherCode) !== -1) {\n    precipitationType = \"snow\";\n} else if (rainCodes.indexOf(weatherCode) !== -1) {\n    precipitationType = \"rain\";\n} else if (sleetCodes.indexOf(weatherCode) !== -1) {\n    precipitationType = \"sleet\";\n}\n\n// Get hourly data arrays\nvar hourlyTemps = Array.isArray(hourly.temperature_2m) ? hourly.temperature_2m : [];\nvar hourlyPrecipProb = Array.isArray(hourly.precipitation_probability) ? hourly.precipitation_probability : [];\n\n// Calculate derived values with proper type conversion\nvar precipProb = 0;\nif (hourlyPrecipProb.length > 0 && hourlyPrecipProb[0] !== null && hourlyPrecipProb[0] !== undefined) {\n    precipProb = parseInt(hourlyPrecipProb[0]) || 0;\n}\n\nvar forecastMinTemp = airTemp;\nif (hourlyTemps.length > 0) {\n    var validTemps = hourlyTemps.filter(function(t) { return t !== null && t !== undefined && !isNaN(t); });\n    if (validTemps.length > 0) {\n        forecastMinTemp = Math.min.apply(null, validTemps);\n    }\n}\n\nvar roadSurfaceTemp = airTemp - 1.5;\n\nreturn {\n    precipitation_type: precipitationType,\n    precipitation_probability: Math.max(0, Math.min(100, precipProb)),\n    forecast_min_temp: forecastMinTemp,\n    road_surface_temp: roadSurfaceTemp\n};"
                 },
                 "runAfter": {
                     "Parse_Weather_Response": [
