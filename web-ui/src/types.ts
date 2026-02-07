@@ -3,6 +3,8 @@ export interface Route {
   route_name: string;
   priority: number;
   length_km: number;
+  latitude: number;
+  longitude: number;
 }
 
 export interface RoutesResponse {
@@ -44,12 +46,10 @@ export interface PredictResponse {
 }
 
 export interface HistoricalDecision {
-  id: string;
   timestamp: string;
   route_id: string;
   route_name: string;
   gritting_decision: string;
-  decision_confidence: number;
   salt_amount_kg: number;
   ice_risk: string;
   snow_risk: string;

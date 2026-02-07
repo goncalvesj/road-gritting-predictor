@@ -26,10 +26,8 @@ COPY python-api/model_trainer.py .
 COPY python-api/gritting_api.py .
 COPY python-api/open_meteo_weather_service.py .
 
-# Copy data files to expected location (scripts reference ../data/)
+# Copy SQLite database to expected location (scripts reference ../data/)
 RUN mkdir -p ../data
-COPY data/edinburgh_gritting_training_dataset.csv ../data/
-COPY data/routes_database.csv ../data/
 COPY data/gritting_data.db ../data/
 
 # Create models directory

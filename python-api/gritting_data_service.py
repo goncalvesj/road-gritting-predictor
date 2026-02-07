@@ -43,13 +43,15 @@ class SqliteRouteService(RouteService):
         conn = sqlite3.connect(db_path)
         conn.row_factory = sqlite3.Row
         try:
-            cursor = conn.execute("SELECT route_id, route_name, priority, road_type, route_length_km FROM routes")
+            cursor = conn.execute("SELECT route_id, route_name, priority, road_type, route_length_km, latitude, longitude FROM routes")
             for row in cursor:
                 self._route_lookup[row['route_id']] = {
                     'route_name': row['route_name'],
                     'priority': row['priority'],
                     'road_type': row['road_type'],
-                    'route_length_km': row['route_length_km']
+                    'route_length_km': row['route_length_km'],
+                    'latitude': row['latitude'],
+                    'longitude': row['longitude']
                 }
         finally:
             conn.close()
@@ -84,7 +86,9 @@ class CsvRouteService(RouteService):
                     'route_name': row['route_name'],
                     'priority': int(row['priority']),
                     'road_type': row['road_type'],
-                    'route_length_km': float(row['route_length_km'])
+                    'route_length_km': float(row['route_length_km']),
+                    'latitude': float(row['latitude']),
+                    'longitude': float(row['longitude'])
                 }
     
     def get_routes(self):

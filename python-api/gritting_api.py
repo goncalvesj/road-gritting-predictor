@@ -318,7 +318,9 @@ def get_routes():
                 'route_id': rid,
                 'route_name': info['route_name'],
                 'priority': info['priority'],
-                'length_km': info['route_length_km']
+                'length_km': info['route_length_km'],
+                'latitude': info['latitude'],
+                'longitude': info['longitude']
             }
             for rid, info in route_service.route_lookup.items()
         ]
@@ -329,6 +331,41 @@ def get_routes():
             'success': False,
             'error': 'Internal server error'
         }), 500
+
+
+@app.route('/history', methods=['GET'])
+def get_history():
+    """Get last 50 prediction history records from database"""
+    import sqlite3
+    try:
+        db_path = '../data/gritting_data.db'
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.execute("""
+            SELECT date, time, route_id, route_name, temperature_c, precipitation_type,
+                   ice_risk, snow_risk, gritting_decision, salt_amount_kg
+            FROM training_data
+            ORDER BY date DESC, time DESC
+            LIMIT 50
+        """)
+        history = []
+        for row in cursor:
+            history.append({
+                'timestamp': f"{row['date']}T{row['time']}:00",
+                'route_id': row['route_id'],
+                'route_name': row['route_name'],
+                'temperature_c': row['temperature_c'],
+                'precipitation_type': row['precipitation_type'],
+                'ice_risk': row['ice_risk'],
+                'snow_risk': row['snow_risk'],
+                'gritting_decision': 'yes' if row['gritting_decision'] == 'gritted' else 'no',
+                'salt_amount_kg': row['salt_amount_kg']
+            })
+        conn.close()
+        return jsonify({'history': history}), 200
+    except Exception:
+        logging.error(traceback.format_exc())
+        return jsonify({'success': False, 'error': 'Internal server error'}), 500
 
 
 @app.route('/health', methods=['GET'])

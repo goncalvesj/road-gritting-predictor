@@ -5,51 +5,7 @@ interface HistoryPageProps {
   onBack: () => void;
 }
 
-// Constants for mock data generation
-const MS_PER_HOUR = 3600000;
-const STARTING_DECISION_ID = 1000;
-
-// Mock historical data - in a real app this would come from an API
-const generateMockHistory = (): HistoricalDecision[] => {
-  const routes = [
-    { id: 'R001', name: 'Queensferry Road' },
-    { id: 'R002', name: 'Leith Walk' },
-    { id: 'R003', name: 'Morningside Road' },
-    { id: 'R004', name: 'Gorgie Road' },
-    { id: 'R005', name: 'Dalry Road' },
-  ];
-
-  const precipTypes = ['none', 'snow', 'rain', 'sleet'];
-  const risks = ['low', 'medium', 'high'];
-  const decisions = ['yes', 'no'];
-
-  const history: HistoricalDecision[] = [];
-  const now = new Date();
-
-  for (let i = 0; i < 20; i++) {
-    const route = routes[Math.floor(Math.random() * routes.length)];
-    const decision = decisions[Math.floor(Math.random() * decisions.length)];
-    const timestamp = new Date(now.getTime() - i * MS_PER_HOUR * (1 + Math.random() * 5));
-    
-    history.push({
-      id: `DEC-${String(STARTING_DECISION_ID - i).padStart(4, '0')}`,
-      timestamp: timestamp.toISOString(),
-      route_id: route.id,
-      route_name: route.name,
-      gritting_decision: decision,
-      decision_confidence: 0.75 + Math.random() * 0.25,
-      salt_amount_kg: decision === 'yes' ? Math.floor(500 + Math.random() * 1000) : 0,
-      ice_risk: risks[Math.floor(Math.random() * risks.length)],
-      snow_risk: risks[Math.floor(Math.random() * risks.length)],
-      temperature_c: -10 + Math.random() * 15,
-      precipitation_type: precipTypes[Math.floor(Math.random() * precipTypes.length)],
-    });
-  }
-
-  return history.sort((a, b) => 
-    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-  );
-};
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 export function HistoryPage({ onBack }: HistoryPageProps) {
   const [history, setHistory] = useState<HistoricalDecision[]>([]);
@@ -57,11 +13,13 @@ export function HistoryPage({ onBack }: HistoryPageProps) {
   const [filter, setFilter] = useState<'all' | 'yes' | 'no'>('all');
 
   useEffect(() => {
-    // Simulate API loading
-    setTimeout(() => {
-      setHistory(generateMockHistory());
-      setLoading(false);
-    }, 500);
+    fetch(`${API_BASE}/history`)
+      .then(res => res.json())
+      .then(data => {
+        setHistory(data.history || []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   const formatDate = (isoString: string) => {
@@ -191,13 +149,12 @@ export function HistoryPage({ onBack }: HistoryPageProps) {
           </div>
         ) : (
           <div className="history-list">
-            {filteredHistory.map((decision) => (
-              <div key={decision.id} className={`history-item decision-${decision.gritting_decision}`}>
+            {filteredHistory.map((decision, idx) => (
+              <div key={`${decision.timestamp}-${decision.route_id}-${idx}`} className={`history-item decision-${decision.gritting_decision}`}>
                 <div className="history-item-header">
                   <span className={`decision-badge-large ${decision.gritting_decision === 'yes' ? 'gritted' : 'not-gritted'}`}>
                     {decision.gritting_decision === 'yes' ? '✅ Gritting Required' : '⏸️ No Gritting'}
                   </span>
-                  <span className="history-id">{decision.id}</span>
                 </div>
                 
                 <div className="history-item-meta">
@@ -231,10 +188,6 @@ export function HistoryPage({ onBack }: HistoryPageProps) {
                   <div className="history-section output">
                     <span className="section-tag">📤 Model Output</span>
                     <div className="section-data">
-                      <div className="data-chip">
-                        <span>🎯</span>
-                        <span>{(decision.decision_confidence * 100).toFixed(0)}% conf</span>
-                      </div>
                       {decision.gritting_decision === 'yes' && (
                         <div className="data-chip highlight">
                           <span>🧂</span>

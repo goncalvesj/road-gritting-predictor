@@ -33,8 +33,8 @@ function getPrecipitationLabel(type: string): string {
 export function AutoWeatherPage() {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [selectedRoute, setSelectedRoute] = useState('');
-  const [latitude, setLatitude] = useState(55.9533); // Edinburgh default
-  const [longitude, setLongitude] = useState(-3.1883);
+  const [latitude, setLatitude] = useState<number>(55.9533); // Edinburgh default
+  const [longitude, setLongitude] = useState<number>(-3.1883);
   const [loading, setLoading] = useState(false);
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState('');
@@ -52,6 +52,8 @@ export function AutoWeatherPage() {
       setRoutes(data.routes);
       if (data.routes.length > 0) {
         setSelectedRoute(data.routes[0].route_id);
+        setLatitude(data.routes[0].latitude);
+        setLongitude(data.routes[0].longitude);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch routes');
@@ -133,7 +135,15 @@ export function AutoWeatherPage() {
             <label>Route</label>
             <select
               value={selectedRoute}
-              onChange={(e) => setSelectedRoute(e.target.value)}
+              onChange={(e) => {
+                const routeId = e.target.value;
+                setSelectedRoute(routeId);
+                const route = routes.find(r => r.route_id === routeId);
+                if (route) {
+                  setLatitude(route.latitude);
+                  setLongitude(route.longitude);
+                }
+              }}
               required
             >
               {routes.map((route) => (
