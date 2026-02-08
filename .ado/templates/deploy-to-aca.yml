@@ -1,0 +1,92 @@
+# Template: Deploy to Azure Container Apps
+# Usage:
+#   - template: templates/deploy-to-aca.yml
+#     parameters:
+#       dependsOn: 'PushToACR'
+
+parameters:
+  - name: dependsOn
+    type: string
+    default: 'PushToACR'
+  - name: poolName
+    type: string
+  - name: backendType
+    type: string
+    default: 'python'
+
+stages:
+  - stage: DeployToACA
+    displayName: 'Deploy to ACA'
+    dependsOn: ${{ parameters.dependsOn }}
+    condition: |
+      and(
+        succeeded(),
+        ne(variables['resourceGroup'], ''),
+        ne(variables['acaName'], ''),
+        or(eq(variables['grittingApiBackend'], '${{ parameters.backendType }}'), eq(variables['grittingApiBackend'], ''))
+      )
+    variables:
+      imageUri: $[ stageDependencies.PushToACR.DockerBuildPush.outputs['dockerOutput.imageUri'] ]
+      imageDigest: $[ stageDependencies.PushToACR.DockerBuildPush.outputs['dockerOutput.imageDigest'] ]
+    jobs:
+      - job: DeployToACA
+        displayName: 'Deploy to Azure Container Apps'
+        pool:
+          name: ${{ parameters.poolName }}
+        steps:
+          - task: AzureCLI@2
+            displayName: 'Deploy to Azure Container Apps'
+            inputs:
+              azureSubscription: '$(azureServiceConnection)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                set -euo pipefail
+
+                IMAGE_URI="$(imageUri)"
+                IMAGE_DIGEST="$(imageDigest)"
+
+                # If digest is available, use immutable deployment
+                if [[ -n "$IMAGE_DIGEST" ]]; then
+                  # Strip tag and append digest for immutable reference
+                  BASE_REF="${IMAGE_URI%%@*}"
+                  BASE_REF="${BASE_REF%:*}"
+                  IMAGE_TO_DEPLOY="${BASE_REF}@${IMAGE_DIGEST}"
+                else
+                  IMAGE_TO_DEPLOY="$IMAGE_URI"
+                fi
+
+                echo "Deploying image: $IMAGE_TO_DEPLOY"
+
+                az config set extension.use_dynamic_install=yes_without_prompt
+
+                az containerapp update \
+                  --name "$(acaName)" \
+                  --resource-group "$(resourceGroup)" \
+                  --image "$IMAGE_TO_DEPLOY" \
+                  --only-show-errors
+
+                # Verify deployment
+                CONFIGURED_IMAGE=$(az containerapp show \
+                  --name "$(acaName)" \
+                  --resource-group "$(resourceGroup)" \
+                  --query "properties.template.containers[0].image" \
+                  --output tsv)
+
+                FQDN=$(az containerapp show \
+                  --name "$(acaName)" \
+                  --resource-group "$(resourceGroup)" \
+                  --query "properties.configuration.ingress.fqdn" \
+                  --output tsv 2>/dev/null || true)
+
+                echo "================================================"
+                echo "Deployment Summary"
+                echo "================================================"
+                echo "Resource Group: $(resourceGroup)"
+                echo "Container App:  $(acaName)"
+                echo "Image Deployed: $IMAGE_TO_DEPLOY"
+                echo "Image Configured: $CONFIGURED_IMAGE"
+                if [[ -n "$FQDN" && "$FQDN" != "null" ]]; then
+                  echo "FQDN: $FQDN"
+                fi
+                echo "================================================"

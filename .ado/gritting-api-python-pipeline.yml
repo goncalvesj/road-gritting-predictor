@@ -74,9 +74,9 @@ stages:
         description: 'Built from goncalvesj/road-gritting-predictor'
         source: 'https://github.com/goncalvesj/road-gritting-predictor'
 
-  # # Deploy to Azure Container Apps
-  # - template: templates/deploy-to-aca.yml
-  #   parameters:
-  #     dependsOn: 'PushToACR'
-  #     poolName: '$(poolName)'
-  #     backendType: 'python'
+  # Deploy to Azure Container Apps
+  - template: templates/deploy-to-aca.yml
+    parameters:
+      dependsOn: 'PushToACR'
+      poolName: '$(poolName)'
+      backendType: 'python'
