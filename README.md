@@ -420,6 +420,10 @@ To use a different weather provider, implement a new weather service class follo
 - **Amount Model R² Score**: 0.954 (on gritted instances)
 - **Key Features**: precipitation_prob_pct, ice_risk, forecast_min_temp_c, temperature_c
 
+## Sample Azure Architecture
+
+![Azure Architecture Diagram](docs/architecture.png)
+
 ## UK Standards Compliance
 
 The system follows **NWSRG (National Winter Service Research Group)** guidelines:
