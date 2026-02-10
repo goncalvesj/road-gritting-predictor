@@ -8,6 +8,8 @@ services:
       - "8080:8080"
     environment:
       - FLASK_DEBUG=0
+      # Set your Application Insights connection string for telemetry
+      # - APPLICATIONINSIGHTS_CONNECTION_STRING=InstrumentationKey=...;IngestionEndpoint=...
       # Uncomment and set your API key for auto-weather feature
       # - OPENWEATHER_API_KEY=your_api_key_here
     restart: unless-stopped

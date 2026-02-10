@@ -9,6 +9,17 @@ import math
 import logging
 import traceback
 
+from azure.monitor.opentelemetry import configure_azure_monitor
+from opentelemetry import trace
+
+# Configure Azure Monitor OpenTelemetry
+# Picks up APPLICATIONINSIGHTS_CONNECTION_STRING from environment automatically.
+# Auto-instruments Flask, requests, and sqlite3.
+if os.environ.get('APPLICATIONINSIGHTS_CONNECTION_STRING'):
+    configure_azure_monitor()
+
+tracer = trace.get_tracer(__name__)
+
 app = Flask(__name__)
 CORS(app)
 
@@ -180,7 +191,12 @@ def predict_gritting():
             }), 404
         
         # Make prediction
-        result = pred.predict(route_id, weather_data)
+        with tracer.start_as_current_span("predict") as span:
+            span.set_attribute("route.id", route_id)
+            span.set_attribute("weather.temperature_c", weather_data['temperature_c'])
+            span.set_attribute("weather.precipitation_type", weather_data['precipitation_type'])
+            result = pred.predict(route_id, weather_data)
+            span.set_attribute("prediction.gritting_decision", str(result.get('gritting_decision', '')))
         
         return jsonify({
             'success': True,
@@ -273,10 +289,18 @@ def predict_with_auto_weather():
             }), 404
         
         # Fetch weather from API
-        weather_data = fetch_weather_from_api(lat, lon)
+        with tracer.start_as_current_span("fetch_weather") as span:
+            span.set_attribute("weather.latitude", lat)
+            span.set_attribute("weather.longitude", lon)
+            weather_data = fetch_weather_from_api(lat, lon)
+            span.set_attribute("weather.temperature_c", weather_data['temperature_c'])
+            span.set_attribute("weather.precipitation_type", weather_data['precipitation_type'])
         
         # Make prediction
-        result = pred.predict(route_id, weather_data)
+        with tracer.start_as_current_span("predict") as span:
+            span.set_attribute("route.id", route_id)
+            result = pred.predict(route_id, weather_data)
+            span.set_attribute("prediction.gritting_decision", str(result.get('gritting_decision', '')))
         
         return jsonify({
             'success': True,
