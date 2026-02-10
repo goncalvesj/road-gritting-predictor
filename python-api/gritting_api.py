@@ -7,14 +7,14 @@ import requests
 import os
 import math
 import logging
-import traceback
 
 from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry import trace
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
 
 # Configure Azure Monitor OpenTelemetry
 # Picks up APPLICATIONINSIGHTS_CONNECTION_STRING from environment automatically.
-# Auto-instruments Flask, requests, and sqlite3.
 if os.environ.get('APPLICATIONINSIGHTS_CONNECTION_STRING'):
     configure_azure_monitor()
 
@@ -22,6 +22,11 @@ tracer = trace.get_tracer(__name__)
 
 app = Flask(__name__)
 CORS(app)
+
+# Explicitly instrument the Flask app and outbound requests library.
+# This ensures HTTP requests appear in App Insights Requests/Dependencies tables.
+FlaskInstrumentor().instrument_app(app)
+RequestsInstrumentor().instrument()
 
 # Initialize route service (SQLite by default, CSV fallback)
 route_service = None
@@ -203,15 +208,14 @@ def predict_gritting():
             'prediction': result
         }), 200
         
-    except RuntimeError:
-        logging.error(traceback.format_exc())
+    except RuntimeError as e:
+        logging.error("Service temporarily unavailable", exc_info=True)
         return jsonify({
             'success': False,
             'error': 'Service temporarily unavailable'
         }), 503
-    except Exception:
-        # Log the full exception details server-side without exposing them to the client
-        logging.error(traceback.format_exc())
+    except Exception as e:
+        logging.error("Internal server error", exc_info=True)
         return jsonify({
             'success': False,
             'error': 'Internal server error'
@@ -309,20 +313,20 @@ def predict_with_auto_weather():
             'weather_source': 'open-meteo'
         }), 200
         
-    except RuntimeError:
-        logging.error(traceback.format_exc())
+    except RuntimeError as e:
+        logging.error("Service temporarily unavailable", exc_info=True)
         return jsonify({
             'success': False,
             'error': 'Service temporarily unavailable'
         }), 503
-    except WeatherAPIError:
-        logging.error(traceback.format_exc())
+    except WeatherAPIError as e:
+        logging.error("Weather service unavailable", exc_info=True)
         return jsonify({
             'success': False,
             'error': 'Weather service unavailable'
         }), 502
-    except Exception:
-        logging.error(traceback.format_exc())
+    except Exception as e:
+        logging.error("Internal server error", exc_info=True)
         return jsonify({
             'success': False,
             'error': 'Internal server error'
@@ -349,8 +353,8 @@ def get_routes():
             for rid, info in route_service.route_lookup.items()
         ]
         return jsonify({'routes': routes}), 200
-    except Exception:
-        logging.error(traceback.format_exc())
+    except Exception as e:
+        logging.error("Internal server error", exc_info=True)
         return jsonify({
             'success': False,
             'error': 'Internal server error'
@@ -387,8 +391,8 @@ def get_history():
             })
         conn.close()
         return jsonify({'history': history}), 200
-    except Exception:
-        logging.error(traceback.format_exc())
+    except Exception as e:
+        logging.error("Internal server error", exc_info=True)
         return jsonify({'success': False, 'error': 'Internal server error'}), 500
 
 
@@ -414,17 +418,17 @@ def health_check():
             'models_loaded': False,
             'error': 'Models are not loaded'
         }), 503
-    except RuntimeError:
+    except RuntimeError as e:
         # Expected failure mode when models are missing or cannot be loaded
-        logging.error(traceback.format_exc())
+        logging.error("Service initialization failed", exc_info=True)
         return jsonify({
             'status': 'unhealthy',
             'models_loaded': False,
             'error': 'Service initialization failed'
         }), 503
-    except Exception:
+    except Exception as e:
         # Unexpected internal error during initialization
-        logging.error(traceback.format_exc())
+        logging.error("Internal server error", exc_info=True)
         return jsonify({
             'status': 'unhealthy',
             'models_loaded': False,
