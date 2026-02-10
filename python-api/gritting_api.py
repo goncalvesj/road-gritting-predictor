@@ -12,11 +12,23 @@ from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry import trace
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
+from opentelemetry.sdk.resources import Resource
 
 # Configure Azure Monitor OpenTelemetry
 # Picks up APPLICATIONINSIGHTS_CONNECTION_STRING from environment automatically.
+# Resource attributes map to App Insights fields for querying:
+#   service.name       → cloud_RoleName
+#   service.version    → application_Version
+#   service.instance.id → cloud_RoleInstance
 if os.environ.get('APPLICATIONINSIGHTS_CONNECTION_STRING'):
-    configure_azure_monitor()
+    configure_azure_monitor(
+        resource=Resource.create({
+            "service.name": "gritting-api",
+            "service.version": "1.0.0",
+            "service.instance.id": os.environ.get("HOSTNAME", "local"),
+            "service.namespace": "road-gritting-predictor",
+        })
+    )
 
 tracer = trace.get_tracer(__name__)
 
